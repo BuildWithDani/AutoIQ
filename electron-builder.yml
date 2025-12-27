@@ -1,0 +1,47 @@
+appId: com.autoiq.app
+productName: AutoIQ
+copyright: Copyright © 2024
+
+directories:
+  buildResources: build
+  output: dist
+
+files:
+  - electron/**/*
+  - frontend/dist/**/*
+  - backend/**/*
+  - package.json
+  - "!backend/**/__pycache__"
+  - "!backend/**/*.pyc"
+  - "!backend/.venv"
+  - "!backend/venv"
+  - "!**/*.map"
+
+win:
+  target:
+    - target: nsis
+      arch:
+        - x64
+  icon: assets/icon.ico
+  artifactName: ${productName}-${version}-Setup.${ext}
+  sign: null
+  verifyUpdateCodeSignature: false
+  signingHashAlgorithms: []
+  certificateFile: null
+  certificatePassword: null
+
+mac:
+  target:
+    - target: dmg
+      arch:
+        - x64
+        - arm64
+  icon: assets/icon.icns
+  category: public.app-category.utilities
+
+nsis:
+  oneClick: false
+  allowToChangeInstallationDirectory: true
+  createDesktopShortcut: true
+  createStartMenuShortcut: true
+

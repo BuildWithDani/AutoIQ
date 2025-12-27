@@ -1,0 +1,55 @@
+# Dependencies
+node_modules/
+frontend/node_modules/
+backend/__pycache__/
+backend/.venv/
+backend/venv/
+backend/env/
+*.pyc
+*.pyo
+*.pyd
+.Python
+
+# Build outputs
+dist/
+build/
+*.egg-info/
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs/
+
+# Config (keep structure, but ignore sensitive data)
+backend/config.json
+
+# Electron
+out/
+packages/
+
+# PocketBase local data
+pocketbase_data/
+pocketbase.exe
+
+# Backend environment (explicit)
+backend/.env
+backend/.env.local
+
+# Railway/Deployment
+.railway/
+

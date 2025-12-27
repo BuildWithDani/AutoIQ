@@ -1,0 +1,12 @@
+fastapi==0.109.0
+uvicorn[standard]==0.27.0
+obd==0.7.1
+pydantic==2.5.3
+pydantic-settings==2.1.0
+python-dotenv==1.0.0
+httpx>=0.28.0
+stripe>=14.0.0
+appwrite>=5.0.0
+pyjwt>=2.8.0
+cryptography>=41.0.0
+
