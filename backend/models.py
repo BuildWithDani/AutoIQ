@@ -156,3 +156,14 @@ class UpdateUserInfoResponse(BaseModel):
 class ChangePasswordResponse(BaseModel):
     message: str
 
+
+class SwitchBillingPeriodRequest(BaseModel):
+    billing_period: Literal["monthly", "yearly"]
+
+
+class SwitchBillingPeriodResponse(BaseModel):
+    success: bool
+    message: str
+    subscription_id: Optional[str] = None
+    billing_period: Optional[Literal["monthly", "yearly"]] = None
+

@@ -8,15 +8,9 @@ import ActivityLog from '../components/ActivityLog';
 import BuildWithDaniBadge from '../components/BuildWithDaniBadge';
 import AccountManagementSection from '../components/AccountManagementSection';
 
-// Extend Window interface for Electron API
-declare global {
-  interface Window {
-    electron?: {
-      openExternal?: (url: string) => Promise<void>;
-      openCheckout?: (checkoutUrl: string, successUrl: string, cancelUrl: string) => Promise<{ success: boolean; cancelled?: boolean; closed?: boolean; url?: string }>;
-    };
-  }
-}
+// Window interface is defined in vite-env.d.ts
+// Type assertion helper for Electron API
+const getElectron = () => (window as any).electron;
 
 export default function Settings({
   onPlanChange,
@@ -141,11 +135,12 @@ export default function Settings({
       });
 
       // Open Stripe checkout in app window if available, otherwise use external browser
-      if (window.electron?.openCheckout) {
+      const electron = getElectron();
+      if (electron?.openCheckout) {
         showToast('Opening payment page...', 'info');
         logActivity('upgrade', `Initiated upgrade to ${targetPlan}`);
         
-        const checkoutResult = await window.electron.openCheckout(
+        const checkoutResult = await electron.openCheckout(
           result.checkout_url,
           successUrl,
           cancelUrl
@@ -164,9 +159,9 @@ export default function Settings({
         } else if (checkoutResult.closed) {
           showToast('Payment window closed', 'info');
         }
-      } else if (window.electron?.openExternal) {
+      } else if (electron?.openExternal) {
         // Fallback to external browser
-        await window.electron.openExternal(result.checkout_url);
+        await electron.openExternal(result.checkout_url);
         showToast('Opening payment page in your browser...', 'info');
         logActivity('upgrade', `Initiated upgrade to ${targetPlan}`);
         // Poll for subscription update after a delay
@@ -286,27 +281,62 @@ export default function Settings({
 
     setLoadingBilling(true);
     try {
+      // Use a return URL that we can detect
+      const returnUrl = 'https://buildwithdani.com/autoiq/subscription-managed';
+      
       const result = await apiClient.createPortalSession({
-        return_url: window.location.origin + '/subscription-managed',
+        return_url: returnUrl,
       });
 
-      // Open Stripe portal in default browser
-      if (window.electron?.openExternal) {
-        await window.electron.openExternal(result.portal_url);
+      // Open Stripe portal in app window if available
+      const electron = getElectron();
+      if (electron?.openPortal) {
         showToast('Opening subscription management portal...', 'info');
         logActivity('subscription', 'Opened subscription management portal');
+        
+        const portalResult = await electron.openPortal(
+          result.portal_url,
+          returnUrl
+        );
+        
+        if (portalResult.completed) {
+          showToast('Subscription updated successfully!', 'success');
+          logActivity('subscription', 'Subscription management completed');
+          // Immediately refresh user data and subscription status
+          await loadSubscriptionStatus();
+          await refreshUser();
+          if (onPlanChange) onPlanChange();
+        } else if (portalResult.closed) {
+          showToast('Portal closed', 'info');
+          // Still refresh in case changes were made
+          setTimeout(async () => {
+            await loadSubscriptionStatus();
+            await refreshUser();
+            if (onPlanChange) onPlanChange();
+          }, 2000);
+        }
+      } else if (electron?.openExternal) {
+        // Fallback: open in external browser
+        await electron.openExternal(result.portal_url);
+        showToast('Opening subscription management portal...', 'info');
+        logActivity('subscription', 'Opened subscription management portal');
+        // Reload subscription status and user data after a delay
+        setTimeout(async () => {
+          await loadSubscriptionStatus();
+          await refreshUser();
+          if (onPlanChange) onPlanChange();
+        }, 3000);
       } else {
         // Fallback: open in new window
         window.open(result.portal_url, '_blank', 'noopener,noreferrer');
         showToast('Subscription portal opened in new window', 'info');
+        // Reload subscription status and user data after a delay
+        setTimeout(async () => {
+          await loadSubscriptionStatus();
+          await refreshUser();
+          if (onPlanChange) onPlanChange();
+        }, 3000);
       }
-      
-      // Reload subscription status and user data after a delay (user might have changed subscription)
-      setTimeout(async () => {
-        await loadSubscriptionStatus();
-        await refreshUser(); // Refresh user data to get updated plan
-        if (onPlanChange) onPlanChange();
-      }, 3000);
     } catch (error: any) {
       console.error('Failed to create portal session:', error);
       const errorMessage = error?.message || 'Failed to open subscription portal';
@@ -315,6 +345,55 @@ export default function Settings({
       } else {
         showToast('Failed to open subscription portal. Please try again.', 'error');
       }
+    } finally {
+      setLoadingBilling(false);
+    }
+  };
+
+  const handleSwitchBillingPeriod = async (newBillingPeriod: 'monthly' | 'yearly') => {
+    if (!billingConfig?.billing_enabled || !subscriptionStatus?.has_subscription) {
+      showToast('No active subscription found.', 'warning');
+      return;
+    }
+
+    if (plan !== 'plus' && plan !== 'pro_plus') {
+      showToast('You must have an active subscription to switch billing periods.', 'warning');
+      return;
+    }
+
+    setLoadingBilling(true);
+    try {
+      const periodText = newBillingPeriod === 'monthly' ? 'Monthly' : 'Yearly';
+      
+      showToast(`Switching to ${periodText} billing...`, 'info');
+      logActivity('subscription', `Initiating switch to ${periodText} billing`);
+
+      // Use the new API endpoint that updates the existing subscription
+      const result = await apiClient.switchBillingPeriod({
+        billing_period: newBillingPeriod,
+      });
+
+      if (result.success) {
+        showToast(`Successfully switched to ${periodText} billing!`, 'success');
+        logActivity('subscription', `Successfully switched to ${periodText} billing`);
+        
+        // Immediately refresh user data and subscription status
+        await refreshUser();
+        await loadSubscriptionStatus();
+        
+        // The subscription update happens immediately via Stripe API,
+        // but we'll poll briefly to ensure webhook has processed
+        setTimeout(async () => {
+          await refreshUser();
+          await loadSubscriptionStatus();
+        }, 2000);
+      } else {
+        throw new Error(result.message || 'Failed to switch billing period');
+      }
+    } catch (error: any) {
+      console.error('Failed to switch billing period:', error);
+      const errorMessage = error?.message || error?.response?.data?.detail?.message || 'Failed to switch billing period';
+      showToast(errorMessage, 'error');
     } finally {
       setLoadingBilling(false);
     }
@@ -490,7 +569,7 @@ export default function Settings({
                   </button>
                   {!subscriptionStatus?.has_subscription && (
                     <p className="text-xs text-blue-700 mt-2">
-                      Note: Subscription management requires subscription ID. If you just subscribed, please wait a moment for the webhook to process.
+                      Note: Subscription management requires subscription ID. If you just subscribed, please wait a moment for the system to process.
                     </p>
                   )}
                 </div>
@@ -672,33 +751,111 @@ export default function Settings({
           {billingConfig?.billing_enabled ? (
             <div className="space-y-4">
               {(subscriptionStatus?.has_subscription || plan === 'plus' || plan === 'pro_plus') && (
-                <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <div className="font-semibold text-green-900 mb-1">Active Subscription</div>
-                      <div className="text-sm text-green-700">
-                        You are currently on the <strong>{plan === 'plus' ? 'AutoIQ+' : 'Pro+'}</strong> plan.
-                        {subscriptionStatus?.subscription_id && (
-                          <div className="mt-1 text-xs text-green-600">
-                            Subscription ID: {subscriptionStatus.subscription_id.substring(0, 20)}...
+                <>
+                  <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <div className="font-semibold text-green-900 mb-1">Active Subscription</div>
+                        <div className="text-sm text-green-700">
+                          You are currently on the <strong>{plan === 'plus' ? 'AutoIQ+' : 'Pro+'}</strong> plan.
+                          {subscriptionStatus?.subscription_id && (
+                            <div className="mt-1 text-xs text-green-600">
+                              Subscription ID: {subscriptionStatus.subscription_id.substring(0, 20)}...
+                            </div>
+                          )}
+                          {!subscriptionStatus?.has_subscription && (
+                            <div className="mt-1 text-xs text-yellow-600">
+                              Note: Subscription details are being synced. If you just subscribed, please wait a moment.
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                      <button
+                        onClick={handleManageSubscription}
+                        disabled={loadingBilling || !subscriptionStatus?.has_subscription}
+                        className="px-6 py-2 bg-primary-600 text-white rounded-lg font-medium hover:bg-primary-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
+                      >
+                        {loadingBilling ? 'Opening...' : subscriptionStatus?.has_subscription ? 'Manage Subscription' : 'Portal Unavailable'}
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Billing Period Switcher for Active Subscriptions */}
+                  {subscriptionStatus?.has_subscription && (plan === 'plus' || plan === 'pro_plus') && (
+                    <div className="bg-blue-50 border-2 border-blue-200 rounded-xl p-6">
+                      <div className="flex items-center justify-between mb-4">
+                        <div>
+                          <h4 className="text-lg font-bold text-blue-900 mb-1">Switch Billing Period</h4>
+                          <p className="text-sm text-blue-700">
+                            Change your subscription from monthly to yearly billing, or vice versa.
+                          </p>
+                        </div>
+                      </div>
+                      
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+                        {/* Switch to Monthly */}
+                        <div className="bg-white rounded-lg p-4 border-2 border-blue-200">
+                          <div className="flex items-center justify-between mb-3">
+                            <div>
+                              <div className="font-bold text-gray-900">Monthly Billing</div>
+                              <div className="text-sm text-gray-600 mt-1">
+                                {plan === 'plus' ? '$7.99/month' : '$19.99/month'}
+                              </div>
+                            </div>
+                            <div className="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center">
+                              <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                              </svg>
+                            </div>
                           </div>
-                        )}
-                        {!subscriptionStatus?.has_subscription && (
-                          <div className="mt-1 text-xs text-yellow-600">
-                            Note: Subscription details are being synced. If you just subscribed, please wait a moment.
+                          <button
+                            onClick={() => handleSwitchBillingPeriod('monthly')}
+                            disabled={loadingBilling}
+                            className="w-full btn-premium py-2.5 text-sm font-bold disabled:opacity-50"
+                          >
+                            {loadingBilling ? 'Processing...' : 'Switch to Monthly'}
+                          </button>
+                        </div>
+
+                        {/* Switch to Yearly */}
+                        <div className="bg-white rounded-lg p-4 border-2 border-green-200 relative overflow-hidden">
+                          <div className="absolute top-2 right-2">
+                            <span className="bg-green-500 text-white text-xs font-bold px-2 py-1 rounded-full">Save</span>
                           </div>
-                        )}
+                          <div className="flex items-center justify-between mb-3">
+                            <div>
+                              <div className="font-bold text-gray-900">Yearly Billing</div>
+                              <div className="text-sm text-gray-600 mt-1">
+                                {plan === 'plus' ? '$79/year' : '$199/year'}
+                              </div>
+                              <div className="text-xs text-green-600 font-semibold mt-1">
+                                {plan === 'plus' ? 'Save $16.88/year' : 'Save $40.88/year'}
+                              </div>
+                            </div>
+                            <div className="w-12 h-12 rounded-full bg-green-100 flex items-center justify-center">
+                              <svg className="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                              </svg>
+                            </div>
+                          </div>
+                          <button
+                            onClick={() => handleSwitchBillingPeriod('yearly')}
+                            disabled={loadingBilling}
+                            className="w-full bg-gradient-to-r from-green-600 to-emerald-600 text-white py-2.5 rounded-xl font-bold shadow-lg hover:shadow-xl transform hover:scale-[1.02] transition-all duration-200 disabled:opacity-50"
+                          >
+                            {loadingBilling ? 'Processing...' : 'Switch to Yearly'}
+                          </button>
+                        </div>
+                      </div>
+
+                      <div className="mt-4 bg-blue-50 border border-blue-200 rounded-lg p-3">
+                        <p className="text-xs text-blue-800">
+                          <strong>Note:</strong> Switching billing periods updates your existing subscription immediately. You'll be charged a prorated amount for the difference, and your billing cycle will be adjusted accordingly.
+                        </p>
                       </div>
                     </div>
-                    <button
-                      onClick={handleManageSubscription}
-                      disabled={loadingBilling || !subscriptionStatus?.has_subscription}
-                      className="px-6 py-2 bg-primary-600 text-white rounded-lg font-medium hover:bg-primary-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
-                    >
-                      {loadingBilling ? 'Opening...' : subscriptionStatus?.has_subscription ? 'Manage Subscription' : 'Portal Unavailable'}
-                    </button>
-                  </div>
-                </div>
+                  )}
+                </>
               )}
               <div className="bg-green-50 border border-green-200 rounded-lg p-4">
                 <div className="flex items-start gap-3">

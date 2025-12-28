@@ -172,3 +172,14 @@ export interface ChangePasswordResponse {
   message: string;
 }
 
+export interface SwitchBillingPeriodRequest {
+  billing_period: 'monthly' | 'yearly';
+}
+
+export interface SwitchBillingPeriodResponse {
+  success: boolean;
+  message: string;
+  subscription_id?: string | null;
+  billing_period?: 'monthly' | 'yearly' | null;
+}
+

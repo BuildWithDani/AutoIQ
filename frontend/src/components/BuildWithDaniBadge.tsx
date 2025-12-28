@@ -25,15 +25,7 @@ const openExternalLink = (url: string) => {
   }
 };
 
-// Extend Window interface for Electron API
-declare global {
-  interface Window {
-    electron?: {
-      openExternal?: (url: string) => Promise<void>;
-      openCheckout?: (checkoutUrl: string, successUrl: string, cancelUrl: string) => Promise<{ success: boolean; cancelled?: boolean; closed?: boolean; url?: string }>;
-    };
-  }
-}
+// Window interface is defined in vite-env.d.ts
 
 export default function BuildWithDaniBadge({ 
   variant = 'default',

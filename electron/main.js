@@ -298,6 +298,102 @@ ipcMain.handle('open-checkout', async (event, { checkoutUrl, successUrl, cancelU
   });
 });
 
+// Handle IPC for opening Stripe Customer Portal in app window
+ipcMain.handle('open-portal', async (event, { portalUrl, returnUrl }) => {
+  return new Promise((resolve) => {
+    let resolved = false; // Prevent multiple resolutions
+    
+    const portalWindow = new BrowserWindow({
+      width: 1000,
+      height: 750,
+      parent: mainWindow || undefined, // Only set parent if mainWindow exists
+      modal: true, // Make it modal so it feels integrated
+      resizable: true,
+      minimizable: false,
+      maximizable: true,
+      frame: true, // Keep frame for security (Stripe requires it)
+      autoHideMenuBar: true, // Hide menu bar for cleaner look
+      webPreferences: {
+        nodeIntegration: false,
+        contextIsolation: true,
+        webSecurity: true, // Enable web security for Stripe
+      },
+      title: 'Manage Subscription - AutoIQ',
+      show: false, // Don't show until ready
+    });
+
+    // Center the window on the parent
+    if (mainWindow) {
+      const bounds = mainWindow.getBounds();
+      const x = bounds.x + (bounds.width / 2) - (1000 / 2);
+      const y = bounds.y + (bounds.height / 2) - (750 / 2);
+      portalWindow.setPosition(Math.round(x), Math.round(y));
+    }
+
+    // Helper function to safely resolve promise only once
+    const safeResolve = (result) => {
+      if (!resolved) {
+        resolved = true;
+        resolve(result);
+      }
+    };
+
+    // Helper function to check if URL matches return URL
+    const urlMatches = (url, targetUrl) => {
+      if (!targetUrl) return false;
+      try {
+        const urlObj = new URL(url);
+        const targetObj = new URL(targetUrl);
+        // Match hostname and pathname (ignore query params and hash)
+        return urlObj.hostname === targetObj.hostname && 
+               urlObj.pathname === targetObj.pathname;
+      } catch (e) {
+        // Fallback to string matching
+        const cleanTarget = targetUrl.replace(/^https?:\/\//, '').split('?')[0].split('#')[0];
+        const cleanUrl = url.replace(/^https?:\/\//, '').split('?')[0].split('#')[0];
+        return cleanUrl.includes(cleanTarget) || cleanTarget.includes(cleanUrl);
+      }
+    };
+
+    // Monitor navigation for return URL (when user finishes managing subscription)
+    portalWindow.webContents.on('will-navigate', (event, navigationUrl) => {
+      console.log('Portal window navigating to:', navigationUrl);
+      
+      // Check if navigation is to return URL (user finished managing subscription)
+      if (returnUrl && urlMatches(navigationUrl, returnUrl)) {
+        event.preventDefault();
+        portalWindow.close();
+        safeResolve({ success: true, url: navigationUrl, completed: true });
+      }
+    });
+
+    // Also listen for did-navigate (after navigation completes)
+    portalWindow.webContents.on('did-navigate', (event, url) => {
+      console.log('Portal window navigated to:', url);
+      
+      if (returnUrl && urlMatches(url, returnUrl)) {
+        setTimeout(() => {
+          portalWindow.close();
+          safeResolve({ success: true, url, completed: true });
+        }, 1000);
+      }
+    });
+
+    // Handle window closed
+    portalWindow.on('closed', () => {
+      safeResolve({ success: false, closed: true });
+    });
+
+    // Show window when ready
+    portalWindow.once('ready-to-show', () => {
+      portalWindow.show();
+    });
+
+    // Load portal URL
+    portalWindow.loadURL(portalUrl);
+  });
+});
+
 app.whenReady().then(async () => {
   try {
     // Start backend (Appwrite is remote, no local server needed)

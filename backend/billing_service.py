@@ -11,7 +11,7 @@ from config import (
     is_billing_configured,
     is_webhook_configured,
 )
-from appwrite_client import get_user_by_id, get_user_by_customer_id, update_profile_plan
+from appwrite_client import get_user_by_id, get_user_by_customer_id, update_profile_plan, get_user_profile
 
 logger = logging.getLogger(__name__)
 
@@ -353,4 +353,101 @@ def handle_subscription_deleted(event: dict) -> None:
         stripe_subscription_id=None  # Clear subscription ID
     )
     logger.info(f"Successfully downgraded user {user_id} to free plan after subscription deletion")
+
+
+def switch_subscription_billing_period(user_id: str, new_billing_period: Literal["monthly", "yearly"]) -> dict:
+    """
+    Switch existing subscription to different billing period using Stripe's subscription update API.
+    
+    This updates the existing subscription instead of creating a new one, which:
+    - Avoids duplicate subscriptions
+    - Handles proration automatically
+    - Is more efficient and user-friendly
+    
+    Args:
+        user_id: Appwrite user ID
+        new_billing_period: New billing period - "monthly" or "yearly"
+    
+    Returns:
+        Dictionary with success status and message
+    
+    Raises:
+        ValueError: If no active subscription found or billing is not configured
+        stripe.error.StripeError: If Stripe API call fails
+    """
+    if not is_billing_configured():
+        raise ValueError("Billing is not configured. Please set STRIPE_SECRET_KEY and STRIPE_PUBLIC_KEY in environment.")
+    
+    secret_key = get_stripe_secret_key()
+    if not secret_key:
+        raise ValueError("STRIPE_SECRET_KEY is not set")
+    
+    # Initialize Stripe
+    stripe.api_key = secret_key
+    
+    # Get user's profile to find subscription
+    profile = get_user_profile(user_id)
+    if not profile:
+        raise ValueError(f"User profile not found for user {user_id}")
+    
+    subscription_id = profile.get("stripeSubscriptionId")
+    if not subscription_id:
+        raise ValueError("No active subscription found. Please subscribe first.")
+    
+    # Get current plan from profile
+    current_plan = profile.get("plan", "plus")
+    if current_plan not in ["plus", "pro_plus"]:
+        raise ValueError(f"Cannot switch billing period for plan: {current_plan}. Must be 'plus' or 'pro_plus'.")
+    
+    # Get the new price ID for the same plan but different billing period
+    new_price_id = get_stripe_price_id(current_plan, new_billing_period)
+    if not new_price_id:
+        period_name = "yearly" if new_billing_period == "yearly" else "monthly"
+        env_var = f"STRIPE_PRICE_ID_{current_plan.upper()}{'_YEARLY' if new_billing_period == 'yearly' else ''}"
+        raise ValueError(f"STRIPE_PRICE_ID for {current_plan} ({period_name}) is not set. Set {env_var} in environment.")
+    
+    try:
+        # Retrieve the current subscription
+        subscription = stripe.Subscription.retrieve(subscription_id)
+        
+        # Check if subscription is active
+        if subscription.status not in ['active', 'trialing']:
+            raise ValueError(f"Cannot switch billing period. Subscription status is: {subscription.status}")
+        
+        # Get the current subscription item ID
+        if not subscription.items.data:
+            raise ValueError("No subscription items found")
+        
+        subscription_item_id = subscription.items.data[0].id
+        
+        # Update the subscription with the new price
+        updated_subscription = stripe.Subscription.modify(
+            subscription_id,
+            items=[{
+                'id': subscription_item_id,
+                'price': new_price_id,
+            }],
+            proration_behavior='always_invoice',  # Charge immediately for prorated amount
+            metadata={
+                'user_id': user_id,
+                'plan': current_plan,
+                'billing_period': new_billing_period,
+                'app': 'autoiq',
+            }
+        )
+        
+        logger.info(f"Successfully switched subscription {subscription_id} to {new_billing_period} billing for user {user_id}")
+        
+        return {
+            'success': True,
+            'message': f'Subscription successfully switched to {new_billing_period} billing',
+            'subscription_id': subscription_id,
+            'billing_period': new_billing_period,
+        }
+    except stripe.error.StripeError as e:
+        logger.error(f"Stripe API error switching subscription: {e}")
+        raise ValueError(f"Failed to switch subscription billing period: {str(e)}")
+    except Exception as e:
+        logger.error(f"Unexpected error switching subscription: {e}")
+        raise ValueError(f"Billing service error: {str(e)}")
 

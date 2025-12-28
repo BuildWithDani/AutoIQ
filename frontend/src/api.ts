@@ -13,6 +13,8 @@ import type {
   SubscriptionStatusResponse,
   PortalSessionRequest,
   PortalSessionResponse,
+  SwitchBillingPeriodRequest,
+  SwitchBillingPeriodResponse,
   RegisterRequest,
   LoginRequest,
   AuthResponse,
@@ -23,45 +25,105 @@ import type {
   ChangePasswordResponse,
 } from './types';
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8001';
+// Hybrid Setup: Route requests to correct backend
+// Railway backend (public) - for auth, billing, AI, account management
+const RAILWAY_API_URL = 
+  (window as any).electron?.railwayUrl || 
+  import.meta.env.VITE_RAILWAY_API_URL || 
+  'https://autoiq-production.up.railway.app';
 
-const api = axios.create({
-  baseURL: API_BASE_URL,
-  timeout: 10000,
-});
+// Local backend (OBD) - for device connection and diagnostics
+const LOCAL_API_URL = 
+  (window as any).electron?.localUrl || 
+  import.meta.env.VITE_API_URL || 
+  'http://127.0.0.1:8001';
 
-// Add request interceptor for JWT token and debugging
-api.interceptors.request.use(
-  (config) => {
-    // Add JWT token from localStorage if available
-    const token = localStorage.getItem('autoiq_token');
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
-    }
-    console.log('API Request:', config.method?.toUpperCase(), config.url);
-    return config;
-  },
-  (error) => {
-    console.error('API Request Error:', error);
-    return Promise.reject(error);
+// Helper function to determine which backend to use based on endpoint
+function getApiBaseUrl(endpoint: string): string {
+  // OBD endpoints go to local backend (requires physical device access)
+  const obdEndpoints = [
+    '/api/status',
+    '/api/reconnect',
+    '/api/live-data',
+    '/api/codes',
+    '/api/clear-codes',
+    '/api/vehicle',
+  ];
+  
+  if (obdEndpoints.some(ep => endpoint.startsWith(ep))) {
+    return LOCAL_API_URL;
   }
-);
+  
+  // Everything else (auth, billing, AI, account) goes to Railway
+  return RAILWAY_API_URL;
+}
 
-// Add response interceptor to handle 401 (unauthorized)
-api.interceptors.response.use(
-  (response) => response,
-  (error) => {
-    if (error.response?.status === 401) {
-      // Token expired or invalid, clear it
-      localStorage.removeItem('autoiq_token');
-      // Redirect to login if not already there
-      if (window.location.hash !== '#/login' && window.location.hash !== '#/register') {
-        window.location.hash = '#/login';
+// Create axios client factory with interceptors
+const createApiClient = (baseURL: string) => {
+  const client = axios.create({
+    baseURL,
+    timeout: 10000,
+  });
+
+  // Add request interceptor for JWT token and debugging
+  client.interceptors.request.use(
+    (config) => {
+      // Add JWT token from localStorage if available
+      const token = localStorage.getItem('autoiq_token');
+      if (token) {
+        config.headers.Authorization = `Bearer ${token}`;
       }
+      console.log('API Request:', config.method?.toUpperCase(), config.url, '→', baseURL);
+      return config;
+    },
+    (error) => {
+      console.error('API Request Error:', error);
+      return Promise.reject(error);
     }
-    return Promise.reject(error);
-  }
-);
+  );
+
+  // Add response interceptor to handle 401 (unauthorized)
+  client.interceptors.response.use(
+    (response) => response,
+    (error) => {
+      if (error.response?.status === 401) {
+        // Token expired or invalid, clear it
+        localStorage.removeItem('autoiq_token');
+        // Redirect to login if not already there
+        if (window.location.hash !== '#/login' && window.location.hash !== '#/register') {
+          window.location.hash = '#/login';
+        }
+      }
+      return Promise.reject(error);
+    }
+  );
+
+  return client;
+};
+
+// Smart API client that routes requests to correct backend
+const api = {
+  get: <T = any>(url: string, config?: any): Promise<{ data: T }> => {
+    const baseURL = getApiBaseUrl(url);
+    const client = createApiClient(baseURL);
+    return client.get<T>(url, config);
+  },
+  post: <T = any>(url: string, data?: any, config?: any): Promise<{ data: T }> => {
+    const baseURL = getApiBaseUrl(url);
+    const client = createApiClient(baseURL);
+    return client.post<T>(url, data, config);
+  },
+  put: <T = any>(url: string, data?: any, config?: any): Promise<{ data: T }> => {
+    const baseURL = getApiBaseUrl(url);
+    const client = createApiClient(baseURL);
+    return client.put<T>(url, data, config);
+  },
+  delete: <T = any>(url: string, config?: any): Promise<{ data: T }> => {
+    const baseURL = getApiBaseUrl(url);
+    const client = createApiClient(baseURL);
+    return client.delete<T>(url, config);
+  },
+};
 
 
 export const apiClient = {
@@ -267,6 +329,25 @@ export const apiClient = {
         const detail = error.response.data?.detail;
         if (typeof detail === 'object' && detail.code === 'billing_unavailable') {
           throw new Error('BILLING_UNAVAILABLE: ' + (detail.message || 'Billing is not configured'));
+        }
+      }
+      throw error;
+    }
+  },
+
+  async switchBillingPeriod(request: SwitchBillingPeriodRequest): Promise<SwitchBillingPeriodResponse> {
+    try {
+      const response = await api.post<SwitchBillingPeriodResponse>('/api/billing/switch-billing-period', request);
+      return response.data;
+    } catch (error: any) {
+      // Extract detailed error message from response
+      if (error.response?.data?.detail) {
+        const detail = error.response.data.detail;
+        if (typeof detail === 'object') {
+          const message = detail.message || detail.code || 'Failed to switch billing period';
+          throw new Error(message);
+        } else if (typeof detail === 'string') {
+          throw new Error(detail);
         }
       }
       throw error;

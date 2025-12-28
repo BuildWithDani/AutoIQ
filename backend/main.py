@@ -29,6 +29,8 @@ from models import (
     SubscriptionStatusResponse,
     PortalSessionRequest,
     PortalSessionResponse,
+    SwitchBillingPeriodRequest,
+    SwitchBillingPeriodResponse,
     RegisterRequest,
     LoginRequest,
     AuthResponse,
@@ -575,6 +577,51 @@ async def create_portal(request: PortalSessionRequest, user: Dict[str, Any] = De
             detail={
                 "code": "internal_error",
                 "message": "An unexpected error occurred while creating portal session."
+            }
+        )
+
+
+@app.post("/api/billing/switch-billing-period", response_model=SwitchBillingPeriodResponse)
+async def switch_billing_period(request: SwitchBillingPeriodRequest, user: Dict[str, Any] = Depends(get_current_user_dependency)):
+    """Switch existing subscription to different billing period."""
+    if not is_billing_configured():
+        raise HTTPException(
+            status_code=503,
+            detail={
+                "code": "billing_unavailable",
+                "message": "Billing is not yet configured. Please contact support."
+            }
+        )
+    
+    if not user.get("stripe_subscription_id"):
+        raise HTTPException(
+            status_code=404,
+            detail={
+                "code": "no_subscription",
+                "message": "No active subscription found. Please subscribe first."
+            }
+        )
+    
+    try:
+        from billing_service import switch_subscription_billing_period
+        result = switch_subscription_billing_period(user.get("id"), request.billing_period)
+        return SwitchBillingPeriodResponse(**result)
+    except ValueError as e:
+        logger.error(f"Billing service error: {e}")
+        raise HTTPException(
+            status_code=400,
+            detail={
+                "code": "billing_error",
+                "message": str(e)
+            }
+        )
+    except Exception as e:
+        logger.error(f"Unexpected error in switch billing period endpoint: {e}", exc_info=True)
+        raise HTTPException(
+            status_code=500,
+            detail={
+                "code": "internal_error",
+                "message": "An unexpected error occurred while switching billing period."
             }
         )
 

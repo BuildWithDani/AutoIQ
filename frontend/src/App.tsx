@@ -258,9 +258,9 @@ const Header = memo(function Header({
   };
 
   const planColors: Record<Plan, string> = {
-    free: 'bg-gradient-to-r from-gray-100 to-gray-200 text-gray-700 shadow-md',
-    plus: 'bg-gradient-to-r from-gray-600 via-gray-700 to-accent-600 text-white shadow-glow',
-    pro_plus: 'bg-gradient-to-r from-gray-800 via-accent-600 to-accent-700 text-white shadow-glow-lg',
+    free: 'bg-gradient-to-r from-gray-100 via-gray-50 to-gray-200 text-gray-700 shadow-md',
+    plus: 'bg-gradient-to-r from-gray-700 via-gray-800 to-blue-600 text-white shadow-lg shadow-blue-500/30',
+    pro_plus: 'bg-gradient-to-r from-gray-900 via-blue-600 to-purple-600 text-white shadow-xl shadow-purple-500/40',
   };
 
   const hasVehicleInfo = vehicleInfo && (vehicleInfo.make || vehicleInfo.model || vehicleInfo.year);
@@ -366,18 +366,32 @@ const Header = memo(function Header({
                 </div>
               )}
 
-              {/* Plan Badge - Enhanced */}
-              <div className="flex items-center gap-3 glass-strong px-5 py-2.5 rounded-xl border-2 border-white/30 shadow-lg">
+              {/* Plan Badge - Enhanced with Premium Glitch Effect */}
+              <div className="flex items-center gap-3 glass-strong px-5 py-2.5 rounded-xl border-2 border-white/30 shadow-lg hover:shadow-xl transition-all duration-300">
                 <span className="text-xs font-bold text-gray-600 uppercase tracking-wider">Plan</span>
-                <span className={`px-5 py-2 rounded-xl text-sm font-black shadow-lg transition-all ${planColors[plan]} relative overflow-hidden border-2 ${
-                  plan === 'free' ? 'border-gray-300/50' : 'border-white/30'
-                }`}>
-                  <span className="relative z-10">{planLabels[plan]}</span>
+                <span className={`px-5 py-2.5 rounded-xl text-sm font-black transition-all duration-300 ${planColors[plan]} relative overflow-hidden border-2 ${
+                  plan === 'free' 
+                    ? 'border-gray-300/50 hover:border-gray-400/60' 
+                    : 'border-white/40 hover:border-white/60'
+                } group`}>
+                  {/* Animated gradient overlay for paid plans */}
                   {plan !== 'free' && (
                     <>
-                      <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent animate-shimmer"></div>
-                      <div className="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent"></div>
+                      <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+                      <div className="absolute inset-0 bg-gradient-to-br from-white/15 via-transparent to-white/10 animate-pulse-slow"></div>
+                      {/* Shimmer effect */}
+                      <div className="absolute inset-0 -translate-x-full group-hover:translate-x-full transition-transform duration-1000 ease-in-out bg-gradient-to-r from-transparent via-white/30 to-transparent"></div>
+                      {/* Subtle glow effect */}
+                      <div className={`absolute -inset-1 rounded-xl blur-sm opacity-0 group-hover:opacity-60 transition-opacity duration-300 ${
+                        plan === 'plus' ? 'bg-blue-500/50' : 'bg-purple-500/50'
+                      }`}></div>
                     </>
+                  )}
+                  {/* Text with better contrast */}
+                  <span className="relative z-10 drop-shadow-sm">{planLabels[plan]}</span>
+                  {/* Premium badge indicator */}
+                  {plan !== 'free' && (
+                    <div className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-white/80 animate-ping"></div>
                   )}
                 </span>
               </div>
