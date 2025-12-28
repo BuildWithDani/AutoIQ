@@ -526,11 +526,15 @@ async def create_checkout(request: CheckoutSessionRequest, user: Dict[str, Any] 
 @app.get("/api/billing/subscription-status", response_model=SubscriptionStatusResponse)
 async def get_subscription_status(user: Dict[str, Any] = Depends(get_current_user_dependency)):
     """Get subscription status for current user."""
-    has_sub = bool(user.get("stripe_subscription_id") and user.get("stripe_customer_id"))
+    # User dict uses camelCase keys from auth.py (stripeCustomerId, stripeSubscriptionId)
+    # Check both camelCase and snake_case for compatibility
+    subscription_id = user.get("stripeSubscriptionId") or user.get("stripe_subscription_id")
+    customer_id = user.get("stripeCustomerId") or user.get("stripe_customer_id")
+    has_sub = bool(subscription_id and customer_id)
     return SubscriptionStatusResponse(
         has_subscription=has_sub,
-        subscription_id=user.get("stripe_subscription_id"),
-        customer_id=user.get("stripe_customer_id"),
+        subscription_id=subscription_id,
+        customer_id=customer_id,
     )
 
 
@@ -547,7 +551,9 @@ async def create_portal(request: PortalSessionRequest, user: Dict[str, Any] = De
         )
     
     # Check if user has customer_id (required for portal)
-    customer_id = user.get("stripe_customer_id")
+    # User dict uses camelCase keys from auth.py (stripeCustomerId, stripeSubscriptionId)
+    # Check both camelCase and snake_case for compatibility
+    customer_id = user.get("stripeCustomerId") or user.get("stripe_customer_id")
     if not customer_id:
         # If user has a paid plan but no customer_id, they might have just subscribed
         # and the webhook hasn't processed yet. Provide a helpful error message.

@@ -121,6 +121,12 @@ export default function Settings({
       return;
     }
 
+    // If user already has a subscription, they should use the portal to change plans
+    if (subscriptionStatus?.has_subscription) {
+      showToast('You already have an active subscription. Please use the "Manage Subscription" button to change your plan.', 'info');
+      return;
+    }
+
     setLoadingBilling(true);
     try {
       // Use proper URLs for Stripe - use backend defaults which are valid HTTPS URLs
@@ -932,7 +938,8 @@ export default function Settings({
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6">
-                {plan !== 'plus' && plan !== 'pro_plus' && (
+                {/* Only show upgrade buttons if user doesn't have an active subscription */}
+                {!subscriptionStatus?.has_subscription && plan !== 'plus' && plan !== 'pro_plus' && (
                   <div className="border-2 border-primary-200 rounded-xl p-6 bg-gradient-to-br from-primary-50 to-white">
                     <h4 className="text-lg font-bold text-gray-900 mb-2">Upgrade to AutoIQ+</h4>
                     <div className="mb-3">
@@ -961,7 +968,8 @@ export default function Settings({
                   </div>
                 )}
 
-                {plan !== 'pro_plus' && (
+                {/* Only show upgrade buttons if user doesn't have an active subscription */}
+                {!subscriptionStatus?.has_subscription && plan !== 'pro_plus' && (
                   <div className="border-2 border-accent-200 rounded-xl p-6 bg-gradient-to-br from-accent-50 to-white">
                     <h4 className="text-lg font-bold text-gray-900 mb-2">Upgrade to Pro+</h4>
                     <div className="mb-3">
