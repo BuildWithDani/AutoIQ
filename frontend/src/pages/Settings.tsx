@@ -339,11 +339,20 @@ export default function Settings({
       }
     } catch (error: any) {
       console.error('Failed to create portal session:', error);
-      const errorMessage = error?.message || 'Failed to open subscription portal';
-      if (errorMessage.includes('NO_SUBSCRIPTION')) {
+      const errorMessage = error?.response?.data?.detail?.message || error?.message || 'Failed to open subscription portal';
+      
+      // Handle specific error cases
+      if (errorMessage.includes('NO_SUBSCRIPTION') || errorMessage.includes('no_subscription')) {
         showToast('No active subscription found. Please subscribe first.', 'error');
+      } else if (errorMessage.includes('subscription_syncing') || errorMessage.includes('being processed')) {
+        showToast('Subscription is being processed. Please wait a moment and try again.', 'warning');
+        // Auto-refresh subscription status after a delay
+        setTimeout(async () => {
+          await loadSubscriptionStatus();
+          await refreshUser();
+        }, 5000);
       } else {
-        showToast('Failed to open subscription portal. Please try again.', 'error');
+        showToast(errorMessage, 'error');
       }
     } finally {
       setLoadingBilling(false);
@@ -560,16 +569,39 @@ export default function Settings({
                   <p className="text-sm text-blue-900 mb-3">
                     <strong>Active Subscription:</strong> You have an active subscription. To change your plan, please use the subscription management portal.
                   </p>
-                  <button
-                    onClick={handleManageSubscription}
-                    disabled={loadingBilling || !subscriptionStatus?.has_subscription}
-                    className="w-full px-6 py-3 bg-primary-600 text-white rounded-lg font-medium hover:bg-primary-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    {loadingBilling ? 'Opening Portal...' : subscriptionStatus?.has_subscription ? 'Manage Subscription' : 'Subscription Portal Unavailable'}
-                  </button>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={handleManageSubscription}
+                      disabled={loadingBilling || !subscriptionStatus?.has_subscription}
+                      className="flex-1 px-6 py-3 bg-primary-600 text-white rounded-lg font-medium hover:bg-primary-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {loadingBilling ? 'Opening Portal...' : subscriptionStatus?.has_subscription ? 'Manage Subscription' : 'Subscription Portal Unavailable'}
+                    </button>
+                    {!subscriptionStatus?.has_subscription && (
+                      <button
+                        onClick={async () => {
+                          setLoadingBilling(true);
+                          try {
+                            await loadSubscriptionStatus();
+                            await refreshUser();
+                            showToast('Subscription status refreshed', 'success');
+                          } catch (error) {
+                            showToast('Failed to refresh status', 'error');
+                          } finally {
+                            setLoadingBilling(false);
+                          }
+                        }}
+                        disabled={loadingBilling}
+                        className="px-4 py-3 bg-gray-200 text-gray-700 rounded-lg font-medium hover:bg-gray-300 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        title="Refresh subscription status"
+                      >
+                        🔄
+                      </button>
+                    )}
+                  </div>
                   {!subscriptionStatus?.has_subscription && (
                     <p className="text-xs text-blue-700 mt-2">
-                      Note: Subscription management requires subscription ID. If you just subscribed, please wait a moment for the system to process.
+                      Note: Subscription management requires both customer ID and subscription ID. If you just subscribed, please wait a moment for the system to process, or click the refresh button above.
                     </p>
                   )}
                 </div>

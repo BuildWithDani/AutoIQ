@@ -546,14 +546,28 @@ async def create_portal(request: PortalSessionRequest, user: Dict[str, Any] = De
             }
         )
     
-    if not user.get("stripe_customer_id"):
-        raise HTTPException(
-            status_code=404,
-            detail={
-                "code": "no_subscription",
-                "message": "No active subscription found. Please subscribe first."
-            }
-        )
+    # Check if user has customer_id (required for portal)
+    customer_id = user.get("stripe_customer_id")
+    if not customer_id:
+        # If user has a paid plan but no customer_id, they might have just subscribed
+        # and the webhook hasn't processed yet. Provide a helpful error message.
+        user_plan = user.get("plan", "free")
+        if user_plan in ["plus", "pro_plus"]:
+            raise HTTPException(
+                status_code=404,
+                detail={
+                    "code": "subscription_syncing",
+                    "message": "Your subscription is being processed. Please wait a few moments and try again. If this persists, contact support."
+                }
+            )
+        else:
+            raise HTTPException(
+                status_code=404,
+                detail={
+                    "code": "no_subscription",
+                    "message": "No active subscription found. Please subscribe first."
+                }
+            )
     
     # Default return URL if not provided
     return_url = request.return_url or "https://buildwithdani.com/autoiq/subscription-managed"
