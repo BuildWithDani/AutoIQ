@@ -1098,38 +1098,70 @@ export default function Settings({
                   </div>
 
                   {/* Subscription Management Section */}
-                  {subscriptionStatus?.has_subscription && (plan === 'plus' || plan === 'pro_plus') && (
+                  {subscriptionStatus?.has_subscription && (plan === 'plus' || plan === 'pro_plus') && (() => {
+                    // Use current_plan and current_billing_period from subscription status if available,
+                    // otherwise fall back to user's plan and assume monthly as default
+                    const currentPlan = subscriptionStatus?.current_plan || plan;
+                    const currentBillingPeriod = subscriptionStatus?.current_billing_period || 'monthly';
+                    
+                    return (
                     <div className="space-y-6">
                       {/* Switch Billing Period Section */}
-                      {subscriptionStatus?.current_plan && subscriptionStatus?.current_billing_period && (
-                        <div className="bg-blue-50 border-2 border-blue-200 rounded-xl p-6">
-                          <div className="flex items-center justify-between mb-4">
-                            <div>
-                              <h4 className="text-lg font-bold text-blue-900 mb-1">Switch Billing Period</h4>
-                              <p className="text-sm text-blue-700">
-                                Change from <strong>{subscriptionStatus.current_billing_period === 'monthly' ? 'Monthly' : 'Yearly'}</strong> to {subscriptionStatus.current_billing_period === 'monthly' ? 'Yearly' : 'Monthly'} billing
-                              </p>
-                            </div>
+                      <div className="bg-blue-50 border-2 border-blue-200 rounded-xl p-6">
+                        <div className="flex items-center justify-between mb-4">
+                          <div>
+                            <h4 className="text-lg font-bold text-blue-900 mb-1">Switch Billing Period</h4>
+                            <p className="text-sm text-blue-700">
+                              Change from <strong>{currentBillingPeriod === 'monthly' ? 'Monthly' : 'Yearly'}</strong> to {currentBillingPeriod === 'monthly' ? 'Yearly' : 'Monthly'} billing
+                            </p>
                           </div>
-                          
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            {/* Current Plan - Show as reference */}
-                            <div className="bg-white rounded-lg p-4 border-2 border-green-300 shadow-sm relative">
+                        </div>
+                        
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          {/* Current Plan - Show as reference */}
+                          <div className="bg-white rounded-lg p-4 border-2 border-green-300 shadow-sm relative">
+                            <div className="absolute top-2 right-2">
+                              <span className="bg-green-500 text-white text-xs font-bold px-2 py-1 rounded-full">Current</span>
+                            </div>
+                            <div className="flex items-center justify-between mb-3">
+                              <div>
+                                <div className="font-bold text-gray-900">
+                                  {currentPlan === 'plus' ? 'AutoIQ+' : 'Pro+'} 
+                                  {' '}
+                                  {currentBillingPeriod === 'monthly' ? 'Monthly' : 'Yearly'}
+                                </div>
+                                <div className="text-sm text-gray-600 mt-1">
+                                  {currentPlan === 'plus' 
+                                    ? (currentBillingPeriod === 'monthly' ? '$7.99/month' : '$79/year')
+                                    : (currentBillingPeriod === 'monthly' ? '$19.99/month' : '$199/year')
+                                  }
+                                </div>
+                              </div>
+                              <div className="w-12 h-12 rounded-full bg-green-100 flex items-center justify-center">
+                                <svg className="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                </svg>
+                              </div>
+                            </div>
+                            <div className="text-xs text-gray-500 italic">Your active subscription</div>
+                          </div>
+
+                          {/* Switch Option */}
+                          {currentBillingPeriod === 'monthly' ? (
+                            <div className="bg-white rounded-lg p-4 border-2 border-green-200 relative overflow-hidden shadow-sm">
                               <div className="absolute top-2 right-2">
-                                <span className="bg-green-500 text-white text-xs font-bold px-2 py-1 rounded-full">Current</span>
+                                <span className="bg-green-500 text-white text-xs font-bold px-2 py-1 rounded-full">Save</span>
                               </div>
                               <div className="flex items-center justify-between mb-3">
                                 <div>
                                   <div className="font-bold text-gray-900">
-                                    {subscriptionStatus.current_plan === 'plus' ? 'AutoIQ+' : 'Pro+'} 
-                                    {' '}
-                                    {subscriptionStatus.current_billing_period === 'monthly' ? 'Monthly' : 'Yearly'}
+                                    {currentPlan === 'plus' ? 'AutoIQ+' : 'Pro+'} Yearly
                                   </div>
                                   <div className="text-sm text-gray-600 mt-1">
-                                    {subscriptionStatus.current_plan === 'plus' 
-                                      ? (subscriptionStatus.current_billing_period === 'monthly' ? '$7.99/month' : '$79/year')
-                                      : (subscriptionStatus.current_billing_period === 'monthly' ? '$19.99/month' : '$199/year')
-                                    }
+                                    {currentPlan === 'plus' ? '$79/year' : '$199/year'}
+                                  </div>
+                                  <div className="text-xs text-green-600 font-semibold mt-1">
+                                    {currentPlan === 'plus' ? 'Save $16.88/year' : 'Save $40.88/year'}
                                   </div>
                                 </div>
                                 <div className="w-12 h-12 rounded-full bg-green-100 flex items-center justify-center">
@@ -1138,79 +1170,51 @@ export default function Settings({
                                   </svg>
                                 </div>
                               </div>
-                              <div className="text-xs text-gray-500 italic">Your active subscription</div>
+                              <button
+                                onClick={() => handleSwitchBillingPeriod('yearly')}
+                                disabled={loadingBilling}
+                                className="w-full bg-gradient-to-r from-green-600 to-emerald-600 text-white py-2.5 rounded-xl font-bold shadow-lg hover:shadow-xl transform hover:scale-[1.02] transition-all duration-200 disabled:opacity-50"
+                              >
+                                {loadingBilling ? 'Processing...' : 'Switch to Yearly'}
+                              </button>
                             </div>
-
-                            {/* Switch Option */}
-                            {subscriptionStatus.current_billing_period === 'monthly' ? (
-                              <div className="bg-white rounded-lg p-4 border-2 border-green-200 relative overflow-hidden shadow-sm">
-                                <div className="absolute top-2 right-2">
-                                  <span className="bg-green-500 text-white text-xs font-bold px-2 py-1 rounded-full">Save</span>
-                                </div>
-                                <div className="flex items-center justify-between mb-3">
-                                  <div>
-                                    <div className="font-bold text-gray-900">
-                                      {subscriptionStatus.current_plan === 'plus' ? 'AutoIQ+' : 'Pro+'} Yearly
-                                    </div>
-                                    <div className="text-sm text-gray-600 mt-1">
-                                      {subscriptionStatus.current_plan === 'plus' ? '$79/year' : '$199/year'}
-                                    </div>
-                                    <div className="text-xs text-green-600 font-semibold mt-1">
-                                      {subscriptionStatus.current_plan === 'plus' ? 'Save $16.88/year' : 'Save $40.88/year'}
-                                    </div>
+                          ) : (
+                            <div className="bg-white rounded-lg p-4 border-2 border-blue-200 shadow-sm">
+                              <div className="flex items-center justify-between mb-3">
+                                <div>
+                                  <div className="font-bold text-gray-900">
+                                    {currentPlan === 'plus' ? 'AutoIQ+' : 'Pro+'} Monthly
                                   </div>
-                                  <div className="w-12 h-12 rounded-full bg-green-100 flex items-center justify-center">
-                                    <svg className="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                    </svg>
+                                  <div className="text-sm text-gray-600 mt-1">
+                                    {currentPlan === 'plus' ? '$7.99/month' : '$19.99/month'}
                                   </div>
                                 </div>
-                                <button
-                                  onClick={() => handleSwitchBillingPeriod('yearly')}
-                                  disabled={loadingBilling}
-                                  className="w-full bg-gradient-to-r from-green-600 to-emerald-600 text-white py-2.5 rounded-xl font-bold shadow-lg hover:shadow-xl transform hover:scale-[1.02] transition-all duration-200 disabled:opacity-50"
-                                >
-                                  {loadingBilling ? 'Processing...' : 'Switch to Yearly'}
-                                </button>
+                                <div className="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center">
+                                  <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                  </svg>
+                                </div>
                               </div>
-                            ) : (
-                              <div className="bg-white rounded-lg p-4 border-2 border-blue-200 shadow-sm">
-                                <div className="flex items-center justify-between mb-3">
-                                  <div>
-                                    <div className="font-bold text-gray-900">
-                                      {subscriptionStatus.current_plan === 'plus' ? 'AutoIQ+' : 'Pro+'} Monthly
-                                    </div>
-                                    <div className="text-sm text-gray-600 mt-1">
-                                      {subscriptionStatus.current_plan === 'plus' ? '$7.99/month' : '$19.99/month'}
-                                    </div>
-                                  </div>
-                                  <div className="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center">
-                                    <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                                    </svg>
-                                  </div>
-                                </div>
-                                <button
-                                  onClick={() => handleSwitchBillingPeriod('monthly')}
-                                  disabled={loadingBilling}
-                                  className="w-full btn-premium py-2.5 text-sm font-bold disabled:opacity-50"
-                                >
-                                  {loadingBilling ? 'Processing...' : 'Switch to Monthly'}
-                                </button>
-                              </div>
-                            )}
-                          </div>
-
-                          <div className="mt-4 bg-blue-50 border border-blue-200 rounded-lg p-3">
-                            <p className="text-xs text-blue-800">
-                              <strong>Note:</strong> Switching billing periods updates your existing subscription immediately. You'll be charged a prorated amount for the difference, and your billing cycle will be adjusted accordingly.
-                            </p>
-                          </div>
+                              <button
+                                onClick={() => handleSwitchBillingPeriod('monthly')}
+                                disabled={loadingBilling}
+                                className="w-full btn-premium py-2.5 text-sm font-bold disabled:opacity-50"
+                              >
+                                {loadingBilling ? 'Processing...' : 'Switch to Monthly'}
+                              </button>
+                            </div>
+                          )}
                         </div>
-                      )}
+
+                        <div className="mt-4 bg-blue-50 border border-blue-200 rounded-lg p-3">
+                          <p className="text-xs text-blue-800">
+                            <strong>Note:</strong> Switching billing periods updates your existing subscription immediately. You'll be charged a prorated amount for the difference, and your billing cycle will be adjusted accordingly.
+                          </p>
+                        </div>
+                      </div>
 
                       {/* Upgrade to Pro+ Section - Only show for Plus users */}
-                      {subscriptionStatus?.current_plan === 'plus' && (
+                      {currentPlan === 'plus' && (
                         <div className="bg-gradient-to-br from-purple-50 to-indigo-50 border-2 border-purple-300 rounded-xl p-6 shadow-lg">
                           <div className="flex items-center gap-3 mb-4">
                             <div className="w-12 h-12 bg-gradient-to-br from-purple-600 to-indigo-600 rounded-xl flex items-center justify-center shadow-lg">
@@ -1350,7 +1354,8 @@ export default function Settings({
                         </div>
                       )}
                     </div>
-                  )}
+                    );
+                  })()}
 
                   {/* Show message for Pro+ users that they're at the highest tier */}
                   {subscriptionStatus?.has_subscription && plan === 'pro_plus' && subscriptionStatus?.current_plan === 'pro_plus' && (
