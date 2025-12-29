@@ -1032,32 +1032,38 @@ export default function Settings({
             <div className="space-y-4">
               {(subscriptionStatus?.has_subscription || plan === 'plus' || plan === 'pro_plus') && (
                 <>
-                  <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <div className="font-semibold text-green-900 mb-1">Active Subscription</div>
-                        <div className="text-sm text-green-700">
-                          {subscriptionStatus?.current_plan && subscriptionStatus?.current_billing_period ? (
-                            <>
-                              Current Subscription: <strong>
-                                {subscriptionStatus.current_plan === 'plus' ? 'AutoIQ+' : 'Pro+'} 
-                                {' '}
-                                {subscriptionStatus.current_billing_period === 'monthly' ? 'Monthly' : 'Yearly'}
-                              </strong>
-                            </>
-                          ) : (
-                            <>
-                              You are currently on the <strong>{plan === 'plus' ? 'AutoIQ+' : 'Pro+'}</strong> plan.
-                            </>
-                          )}
+                  {/* Current Subscription Display */}
+                  <div className="bg-gradient-to-br from-green-50 to-emerald-50 border-2 border-green-300 rounded-xl p-6 shadow-md">
+                    <div className="flex items-center justify-between mb-4">
+                      <div className="flex items-center gap-3">
+                        <div className="w-12 h-12 bg-gradient-to-br from-green-500 to-emerald-600 rounded-xl flex items-center justify-center shadow-lg">
+                          <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                          </svg>
+                        </div>
+                        <div>
+                          <div className="font-bold text-lg text-green-900 mb-1">Current Subscription</div>
+                          <div className="text-sm text-green-700">
+                            {subscriptionStatus?.current_plan && subscriptionStatus?.current_billing_period ? (
+                              <>
+                                <span className="text-xl font-bold text-green-900">
+                                  {subscriptionStatus.current_plan === 'plus' ? 'AutoIQ+' : 'Pro+'} 
+                                  {' '}
+                                  {subscriptionStatus.current_billing_period === 'monthly' ? 'Monthly' : 'Yearly'}
+                                </span>
+                                {subscriptionStatus.current_plan === 'plus' && subscriptionStatus.current_billing_period === 'monthly' && (
+                                  <span className="ml-2 text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded-full font-semibold">Active</span>
+                                )}
+                              </>
+                            ) : (
+                              <>
+                                <strong>{plan === 'plus' ? 'AutoIQ+' : 'Pro+'}</strong> Plan
+                              </>
+                            )}
+                          </div>
                           {subscriptionStatus?.subscription_id && (
-                            <div className="mt-1 text-xs text-green-600">
-                              Subscription ID: {subscriptionStatus.subscription_id.substring(0, 20)}...
-                            </div>
-                          )}
-                          {!subscriptionStatus?.has_subscription && (
-                            <div className="mt-1 text-xs text-yellow-600">
-                              Note: Subscription details are being synced. If you just subscribed, please wait a moment.
+                            <div className="mt-2 text-xs text-green-600 font-mono">
+                              ID: {subscriptionStatus.subscription_id.substring(0, 20)}...
                             </div>
                           )}
                         </div>
@@ -1065,235 +1071,284 @@ export default function Settings({
                       <button
                         onClick={handleManageSubscription}
                         disabled={loadingBilling || !subscriptionStatus?.has_subscription}
-                        className="px-6 py-2 bg-primary-600 text-white rounded-lg font-medium hover:bg-primary-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
+                        className="px-6 py-3 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-lg font-semibold hover:from-green-700 hover:to-emerald-700 transition-all shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap transform hover:scale-105 disabled:transform-none"
                       >
-                        {loadingBilling ? 'Opening...' : subscriptionStatus?.has_subscription ? 'Manage Subscription' : 'Portal Unavailable'}
+                        {loadingBilling ? (
+                          <span className="flex items-center gap-2">
+                            <svg className="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
+                              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            </svg>
+                            Opening...
+                          </span>
+                        ) : subscriptionStatus?.has_subscription ? (
+                          'Manage Subscription'
+                        ) : (
+                          'Portal Unavailable'
+                        )}
                       </button>
                     </div>
-                  </div>
-
-                  {/* Upgrade Plan Section - Show for Plus users to upgrade to Pro+ */}
-                  {subscriptionStatus?.has_subscription && plan === 'plus' && subscriptionStatus?.current_plan === 'plus' && (
-                    <div className="bg-gradient-to-br from-purple-50 to-indigo-50 border-2 border-purple-300 rounded-xl p-6 shadow-lg">
-                      <div className="flex items-center gap-3 mb-4">
-                        <div className="w-12 h-12 bg-gradient-to-br from-purple-600 to-indigo-600 rounded-xl flex items-center justify-center shadow-lg">
-                          <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-                          </svg>
-                        </div>
-                        <div>
-                          <h4 className="text-xl font-bold text-gray-900 mb-1">Upgrade to Pro+</h4>
-                          <p className="text-sm text-gray-600">Unlock advanced features and priority support</p>
-                        </div>
-                      </div>
-                      
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        {/* Pro+ Monthly */}
-                        <div className="bg-white rounded-xl p-5 border-2 border-purple-200 shadow-md hover:shadow-lg transition-shadow">
-                          <div className="flex items-center justify-between mb-4">
-                            <div>
-                              <div className="font-bold text-lg text-gray-900">Pro+ Monthly</div>
-                              <div className="text-2xl font-bold text-purple-600 mt-1">$19.99<span className="text-sm font-normal text-gray-600">/month</span></div>
-                              <div className="text-xs text-gray-500 mt-1">Best for: Mechanics & shop owners</div>
-                            </div>
-                            <div className="w-14 h-14 rounded-full bg-gradient-to-br from-purple-100 to-indigo-100 flex items-center justify-center">
-                              <svg className="w-7 h-7 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
-                              </svg>
-                            </div>
-                          </div>
-                          <ul className="text-xs text-gray-600 space-y-1 mb-4">
-                            <li className="flex items-center gap-2">
-                              <svg className="w-4 h-4 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                              </svg>
-                              Everything in AutoIQ+
-                            </li>
-                            <li className="flex items-center gap-2">
-                              <svg className="w-4 h-4 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                              </svg>
-                              Advanced diagnostics
-                            </li>
-                            <li className="flex items-center gap-2">
-                              <svg className="w-4 h-4 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                              </svg>
-                              Data export & reports
-                            </li>
-                            <li className="flex items-center gap-2">
-                              <svg className="w-4 h-4 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                              </svg>
-                              Priority support
-                            </li>
-                          </ul>
-                          <button
-                            onClick={() => handleUpgradeSubscription('pro_plus', 'monthly')}
-                            disabled={loadingBilling}
-                            className="w-full bg-gradient-to-r from-purple-600 to-indigo-600 text-white py-3 rounded-xl font-bold shadow-lg hover:shadow-xl transform hover:scale-[1.02] transition-all duration-200 disabled:opacity-50 disabled:transform-none"
-                          >
-                            {loadingBilling ? (
-                              <span className="flex items-center justify-center gap-2">
-                                <svg className="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
-                                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                                </svg>
-                                Processing...
-                              </span>
-                            ) : (
-                              'Upgrade to Pro+ Monthly'
-                            )}
-                          </button>
-                        </div>
-
-                        {/* Pro+ Yearly */}
-                        <div className="bg-white rounded-xl p-5 border-2 border-green-300 shadow-md hover:shadow-lg transition-shadow relative overflow-hidden">
-                          <div className="absolute top-3 right-3">
-                            <span className="bg-gradient-to-r from-green-500 to-emerald-500 text-white text-xs font-bold px-3 py-1 rounded-full shadow-md">Best Value</span>
-                          </div>
-                          <div className="flex items-center justify-between mb-4">
-                            <div>
-                              <div className="font-bold text-lg text-gray-900">Pro+ Yearly</div>
-                              <div className="text-2xl font-bold text-green-600 mt-1">$199<span className="text-sm font-normal text-gray-600">/year</span></div>
-                              <div className="text-xs text-green-600 font-semibold mt-1">Save $40.88/year</div>
-                              <div className="text-xs text-gray-500 mt-1">Best for: Mechanics & shop owners</div>
-                            </div>
-                            <div className="w-14 h-14 rounded-full bg-gradient-to-br from-green-100 to-emerald-100 flex items-center justify-center">
-                              <svg className="w-7 h-7 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
-                              </svg>
-                            </div>
-                          </div>
-                          <ul className="text-xs text-gray-600 space-y-1 mb-4">
-                            <li className="flex items-center gap-2">
-                              <svg className="w-4 h-4 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                              </svg>
-                              Everything in AutoIQ+
-                            </li>
-                            <li className="flex items-center gap-2">
-                              <svg className="w-4 h-4 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                              </svg>
-                              Advanced diagnostics
-                            </li>
-                            <li className="flex items-center gap-2">
-                              <svg className="w-4 h-4 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                              </svg>
-                              Data export & reports
-                            </li>
-                            <li className="flex items-center gap-2">
-                              <svg className="w-4 h-4 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                              </svg>
-                              Priority support
-                            </li>
-                          </ul>
-                          <button
-                            onClick={() => handleUpgradeSubscription('pro_plus', 'yearly')}
-                            disabled={loadingBilling}
-                            className="w-full bg-gradient-to-r from-green-600 to-emerald-600 text-white py-3 rounded-xl font-bold shadow-lg hover:shadow-xl transform hover:scale-[1.02] transition-all duration-200 disabled:opacity-50 disabled:transform-none"
-                          >
-                            {loadingBilling ? (
-                              <span className="flex items-center justify-center gap-2">
-                                <svg className="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
-                                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                                </svg>
-                                Processing...
-                              </span>
-                            ) : (
-                              'Upgrade to Pro+ Yearly'
-                            )}
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Billing Period Switcher for Active Subscriptions */}
-                  {subscriptionStatus?.has_subscription && (plan === 'plus' || plan === 'pro_plus') && (
-                    <div className="bg-blue-50 border-2 border-blue-200 rounded-xl p-6">
-                      <div className="flex items-center justify-between mb-4">
-                        <div>
-                          <h4 className="text-lg font-bold text-blue-900 mb-1">Switch Billing Period</h4>
-                          <p className="text-sm text-blue-700">
-                            {subscriptionStatus?.current_plan && subscriptionStatus?.current_billing_period ? (
-                              <>Current: <strong>{subscriptionStatus.current_plan === 'plus' ? 'AutoIQ+' : 'Pro+'}</strong> {subscriptionStatus.current_billing_period === 'monthly' ? 'Monthly' : 'Yearly'}</>
-                            ) : (
-                              <>Change your subscription billing period.</>
-                            )}
-                          </p>
-                        </div>
-                      </div>
-                      
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
-                        {/* Switch to Monthly (only show if currently yearly) */}
-                        {subscriptionStatus?.current_billing_period !== 'monthly' && (
-                          <div className="bg-white rounded-lg p-4 border-2 border-blue-200 shadow-sm">
-                            <div className="flex items-center justify-between mb-3">
-                              <div>
-                                <div className="font-bold text-gray-900">Monthly Billing</div>
-                                <div className="text-sm text-gray-600 mt-1">
-                                  {subscriptionStatus?.current_plan === 'plus' ? '$7.99/month' : '$19.99/month'}
-                                </div>
-                              </div>
-                              <div className="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center">
-                                <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                                </svg>
-                              </div>
-                            </div>
-                            <button
-                              onClick={() => handleSwitchBillingPeriod('monthly')}
-                              disabled={loadingBilling}
-                              className="w-full btn-premium py-2.5 text-sm font-bold disabled:opacity-50"
-                            >
-                              {loadingBilling ? 'Processing...' : 'Switch to Monthly'}
-                            </button>
-                          </div>
-                        )}
-
-                        {/* Switch to Yearly (only show if currently monthly) */}
-                        {subscriptionStatus?.current_billing_period !== 'yearly' && (
-                          <div className="bg-white rounded-lg p-4 border-2 border-green-200 relative overflow-hidden shadow-sm">
-                            <div className="absolute top-2 right-2">
-                              <span className="bg-green-500 text-white text-xs font-bold px-2 py-1 rounded-full">Save</span>
-                            </div>
-                            <div className="flex items-center justify-between mb-3">
-                              <div>
-                                <div className="font-bold text-gray-900">Yearly Billing</div>
-                                <div className="text-sm text-gray-600 mt-1">
-                                  {subscriptionStatus?.current_plan === 'plus' ? '$79/year' : '$199/year'}
-                                </div>
-                                <div className="text-xs text-green-600 font-semibold mt-1">
-                                  {subscriptionStatus?.current_plan === 'plus' ? 'Save $16.88/year' : 'Save $40.88/year'}
-                                </div>
-                              </div>
-                              <div className="w-12 h-12 rounded-full bg-green-100 flex items-center justify-center">
-                                <svg className="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                </svg>
-                              </div>
-                            </div>
-                            <button
-                              onClick={() => handleSwitchBillingPeriod('yearly')}
-                              disabled={loadingBilling}
-                              className="w-full bg-gradient-to-r from-green-600 to-emerald-600 text-white py-2.5 rounded-xl font-bold shadow-lg hover:shadow-xl transform hover:scale-[1.02] transition-all duration-200 disabled:opacity-50"
-                            >
-                              {loadingBilling ? 'Processing...' : 'Switch to Yearly'}
-                            </button>
-                          </div>
-                        )}
-                      </div>
-
-                      <div className="mt-4 bg-blue-50 border border-blue-200 rounded-lg p-3">
-                        <p className="text-xs text-blue-800">
-                          <strong>Note:</strong> Switching billing periods updates your existing subscription immediately. You'll be charged a prorated amount for the difference, and your billing cycle will be adjusted accordingly.
+                    {!subscriptionStatus?.has_subscription && (
+                      <div className="mt-3 bg-yellow-50 border border-yellow-200 rounded-lg p-3">
+                        <p className="text-xs text-yellow-800">
+                          <strong>Note:</strong> Subscription details are being synced. If you just subscribed, please wait a moment.
                         </p>
                       </div>
+                    )}
+                  </div>
+
+                  {/* Subscription Management Section */}
+                  {subscriptionStatus?.has_subscription && (plan === 'plus' || plan === 'pro_plus') && (
+                    <div className="space-y-6">
+                      {/* Switch Billing Period Section */}
+                      {subscriptionStatus?.current_plan && subscriptionStatus?.current_billing_period && (
+                        <div className="bg-blue-50 border-2 border-blue-200 rounded-xl p-6">
+                          <div className="flex items-center justify-between mb-4">
+                            <div>
+                              <h4 className="text-lg font-bold text-blue-900 mb-1">Switch Billing Period</h4>
+                              <p className="text-sm text-blue-700">
+                                Change from <strong>{subscriptionStatus.current_billing_period === 'monthly' ? 'Monthly' : 'Yearly'}</strong> to {subscriptionStatus.current_billing_period === 'monthly' ? 'Yearly' : 'Monthly'} billing
+                              </p>
+                            </div>
+                          </div>
+                          
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            {/* Current Plan - Show as reference */}
+                            <div className="bg-white rounded-lg p-4 border-2 border-green-300 shadow-sm relative">
+                              <div className="absolute top-2 right-2">
+                                <span className="bg-green-500 text-white text-xs font-bold px-2 py-1 rounded-full">Current</span>
+                              </div>
+                              <div className="flex items-center justify-between mb-3">
+                                <div>
+                                  <div className="font-bold text-gray-900">
+                                    {subscriptionStatus.current_plan === 'plus' ? 'AutoIQ+' : 'Pro+'} 
+                                    {' '}
+                                    {subscriptionStatus.current_billing_period === 'monthly' ? 'Monthly' : 'Yearly'}
+                                  </div>
+                                  <div className="text-sm text-gray-600 mt-1">
+                                    {subscriptionStatus.current_plan === 'plus' 
+                                      ? (subscriptionStatus.current_billing_period === 'monthly' ? '$7.99/month' : '$79/year')
+                                      : (subscriptionStatus.current_billing_period === 'monthly' ? '$19.99/month' : '$199/year')
+                                    }
+                                  </div>
+                                </div>
+                                <div className="w-12 h-12 rounded-full bg-green-100 flex items-center justify-center">
+                                  <svg className="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                  </svg>
+                                </div>
+                              </div>
+                              <div className="text-xs text-gray-500 italic">Your active subscription</div>
+                            </div>
+
+                            {/* Switch Option */}
+                            {subscriptionStatus.current_billing_period === 'monthly' ? (
+                              <div className="bg-white rounded-lg p-4 border-2 border-green-200 relative overflow-hidden shadow-sm">
+                                <div className="absolute top-2 right-2">
+                                  <span className="bg-green-500 text-white text-xs font-bold px-2 py-1 rounded-full">Save</span>
+                                </div>
+                                <div className="flex items-center justify-between mb-3">
+                                  <div>
+                                    <div className="font-bold text-gray-900">
+                                      {subscriptionStatus.current_plan === 'plus' ? 'AutoIQ+' : 'Pro+'} Yearly
+                                    </div>
+                                    <div className="text-sm text-gray-600 mt-1">
+                                      {subscriptionStatus.current_plan === 'plus' ? '$79/year' : '$199/year'}
+                                    </div>
+                                    <div className="text-xs text-green-600 font-semibold mt-1">
+                                      {subscriptionStatus.current_plan === 'plus' ? 'Save $16.88/year' : 'Save $40.88/year'}
+                                    </div>
+                                  </div>
+                                  <div className="w-12 h-12 rounded-full bg-green-100 flex items-center justify-center">
+                                    <svg className="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                    </svg>
+                                  </div>
+                                </div>
+                                <button
+                                  onClick={() => handleSwitchBillingPeriod('yearly')}
+                                  disabled={loadingBilling}
+                                  className="w-full bg-gradient-to-r from-green-600 to-emerald-600 text-white py-2.5 rounded-xl font-bold shadow-lg hover:shadow-xl transform hover:scale-[1.02] transition-all duration-200 disabled:opacity-50"
+                                >
+                                  {loadingBilling ? 'Processing...' : 'Switch to Yearly'}
+                                </button>
+                              </div>
+                            ) : (
+                              <div className="bg-white rounded-lg p-4 border-2 border-blue-200 shadow-sm">
+                                <div className="flex items-center justify-between mb-3">
+                                  <div>
+                                    <div className="font-bold text-gray-900">
+                                      {subscriptionStatus.current_plan === 'plus' ? 'AutoIQ+' : 'Pro+'} Monthly
+                                    </div>
+                                    <div className="text-sm text-gray-600 mt-1">
+                                      {subscriptionStatus.current_plan === 'plus' ? '$7.99/month' : '$19.99/month'}
+                                    </div>
+                                  </div>
+                                  <div className="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center">
+                                    <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                    </svg>
+                                  </div>
+                                </div>
+                                <button
+                                  onClick={() => handleSwitchBillingPeriod('monthly')}
+                                  disabled={loadingBilling}
+                                  className="w-full btn-premium py-2.5 text-sm font-bold disabled:opacity-50"
+                                >
+                                  {loadingBilling ? 'Processing...' : 'Switch to Monthly'}
+                                </button>
+                              </div>
+                            )}
+                          </div>
+
+                          <div className="mt-4 bg-blue-50 border border-blue-200 rounded-lg p-3">
+                            <p className="text-xs text-blue-800">
+                              <strong>Note:</strong> Switching billing periods updates your existing subscription immediately. You'll be charged a prorated amount for the difference, and your billing cycle will be adjusted accordingly.
+                            </p>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Upgrade to Pro+ Section - Only show for Plus users */}
+                      {subscriptionStatus?.current_plan === 'plus' && (
+                        <div className="bg-gradient-to-br from-purple-50 to-indigo-50 border-2 border-purple-300 rounded-xl p-6 shadow-lg">
+                          <div className="flex items-center gap-3 mb-4">
+                            <div className="w-12 h-12 bg-gradient-to-br from-purple-600 to-indigo-600 rounded-xl flex items-center justify-center shadow-lg">
+                              <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                              </svg>
+                            </div>
+                            <div>
+                              <h4 className="text-xl font-bold text-gray-900 mb-1">Upgrade to Pro+</h4>
+                              <p className="text-sm text-gray-600">Unlock advanced features and priority support</p>
+                            </div>
+                          </div>
+                          
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            {/* Pro+ Monthly */}
+                            <div className="bg-white rounded-xl p-5 border-2 border-purple-200 shadow-md hover:shadow-lg transition-shadow">
+                              <div className="flex items-center justify-between mb-4">
+                                <div>
+                                  <div className="font-bold text-lg text-gray-900">Pro+ Monthly</div>
+                                  <div className="text-2xl font-bold text-purple-600 mt-1">$19.99<span className="text-sm font-normal text-gray-600">/month</span></div>
+                                  <div className="text-xs text-gray-500 mt-1">Best for: Mechanics & shop owners</div>
+                                </div>
+                                <div className="w-14 h-14 rounded-full bg-gradient-to-br from-purple-100 to-indigo-100 flex items-center justify-center">
+                                  <svg className="w-7 h-7 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
+                                  </svg>
+                                </div>
+                              </div>
+                              <ul className="text-xs text-gray-600 space-y-1 mb-4">
+                                <li className="flex items-center gap-2">
+                                  <svg className="w-4 h-4 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                                  </svg>
+                                  Everything in AutoIQ+
+                                </li>
+                                <li className="flex items-center gap-2">
+                                  <svg className="w-4 h-4 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                                  </svg>
+                                  Advanced diagnostics
+                                </li>
+                                <li className="flex items-center gap-2">
+                                  <svg className="w-4 h-4 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                                  </svg>
+                                  Data export & reports
+                                </li>
+                                <li className="flex items-center gap-2">
+                                  <svg className="w-4 h-4 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                                  </svg>
+                                  Priority support
+                                </li>
+                              </ul>
+                              <button
+                                onClick={() => handleUpgradeSubscription('pro_plus', 'monthly')}
+                                disabled={loadingBilling}
+                                className="w-full bg-gradient-to-r from-purple-600 to-indigo-600 text-white py-3 rounded-xl font-bold shadow-lg hover:shadow-xl transform hover:scale-[1.02] transition-all duration-200 disabled:opacity-50 disabled:transform-none"
+                              >
+                                {loadingBilling ? (
+                                  <span className="flex items-center justify-center gap-2">
+                                    <svg className="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
+                                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                    </svg>
+                                    Processing...
+                                  </span>
+                                ) : (
+                                  'Upgrade to Pro+ Monthly'
+                                )}
+                              </button>
+                            </div>
+
+                            {/* Pro+ Yearly */}
+                            <div className="bg-white rounded-xl p-5 border-2 border-green-300 shadow-md hover:shadow-lg transition-shadow relative overflow-hidden">
+                              <div className="absolute top-3 right-3">
+                                <span className="bg-gradient-to-r from-green-500 to-emerald-500 text-white text-xs font-bold px-3 py-1 rounded-full shadow-md">Best Value</span>
+                              </div>
+                              <div className="flex items-center justify-between mb-4">
+                                <div>
+                                  <div className="font-bold text-lg text-gray-900">Pro+ Yearly</div>
+                                  <div className="text-2xl font-bold text-green-600 mt-1">$199<span className="text-sm font-normal text-gray-600">/year</span></div>
+                                  <div className="text-xs text-green-600 font-semibold mt-1">Save $40.88/year</div>
+                                  <div className="text-xs text-gray-500 mt-1">Best for: Mechanics & shop owners</div>
+                                </div>
+                                <div className="w-14 h-14 rounded-full bg-gradient-to-br from-green-100 to-emerald-100 flex items-center justify-center">
+                                  <svg className="w-7 h-7 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
+                                  </svg>
+                                </div>
+                              </div>
+                              <ul className="text-xs text-gray-600 space-y-1 mb-4">
+                                <li className="flex items-center gap-2">
+                                  <svg className="w-4 h-4 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                                  </svg>
+                                  Everything in AutoIQ+
+                                </li>
+                                <li className="flex items-center gap-2">
+                                  <svg className="w-4 h-4 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                                  </svg>
+                                  Advanced diagnostics
+                                </li>
+                                <li className="flex items-center gap-2">
+                                  <svg className="w-4 h-4 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                                  </svg>
+                                  Data export & reports
+                                </li>
+                                <li className="flex items-center gap-2">
+                                  <svg className="w-4 h-4 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                                  </svg>
+                                  Priority support
+                                </li>
+                              </ul>
+                              <button
+                                onClick={() => handleUpgradeSubscription('pro_plus', 'yearly')}
+                                disabled={loadingBilling}
+                                className="w-full bg-gradient-to-r from-green-600 to-emerald-600 text-white py-3 rounded-xl font-bold shadow-lg hover:shadow-xl transform hover:scale-[1.02] transition-all duration-200 disabled:opacity-50 disabled:transform-none"
+                              >
+                                {loadingBilling ? (
+                                  <span className="flex items-center justify-center gap-2">
+                                    <svg className="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
+                                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                    </svg>
+                                    Processing...
+                                  </span>
+                                ) : (
+                                  'Upgrade to Pro+ Yearly'
+                                )}
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      )}
                     </div>
                   )}
 

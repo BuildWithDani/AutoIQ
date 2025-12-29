@@ -407,18 +407,22 @@ def switch_subscription_billing_period(user_id: str, new_billing_period: Literal
         raise ValueError(f"STRIPE_PRICE_ID for {current_plan} ({period_name}) is not set. Set {env_var} in environment.")
     
     try:
-        # Retrieve the current subscription with expanded items
-        subscription = stripe.Subscription.retrieve(
-            subscription_id,
-            expand=['items.data']
-        )
+        # Retrieve the current subscription
+        subscription = stripe.Subscription.retrieve(subscription_id)
         
         # Check if subscription is active
         if subscription.status not in ['active', 'trialing']:
             raise ValueError(f"Cannot switch billing period. Subscription status is: {subscription.status}")
         
-        # Get the current subscription item ID
-        items = subscription.items.data if hasattr(subscription.items, 'data') else []
+        # Get subscription items - items is a ListObject, access via .data
+        # If items is not expanded, we need to list them
+        if hasattr(subscription.items, 'data'):
+            items = subscription.items.data
+        else:
+            # If items is not expanded, retrieve them separately
+            items_list = subscription.items.list(limit=1)
+            items = items_list.data if hasattr(items_list, 'data') else []
+        
         if not items:
             raise ValueError("No subscription items found")
         
@@ -476,16 +480,27 @@ def get_subscription_details(subscription_id: str) -> Optional[dict]:
     stripe.api_key = secret_key
     
     try:
-        subscription = stripe.Subscription.retrieve(
-            subscription_id,
-            expand=['items.data']
-        )
+        subscription = stripe.Subscription.retrieve(subscription_id)
         
-        items = subscription.items.data if hasattr(subscription.items, 'data') else []
+        # Get subscription items - items is a ListObject
+        if hasattr(subscription.items, 'data'):
+            items = subscription.items.data
+        else:
+            # If items is not expanded, retrieve them separately
+            items_list = subscription.items.list(limit=1)
+            items = items_list.data if hasattr(items_list, 'data') else []
+        
         if not items:
             return None
         
-        price_id = items[0].price.id
+        # Get price ID - may need to expand price
+        price = items[0].price
+        if isinstance(price, str):
+            # Price is just an ID, need to retrieve it
+            price_obj = stripe.Price.retrieve(price)
+            price_id = price_obj.id
+        else:
+            price_id = price.id
         
         # Determine plan and billing period from price ID
         plus_price_id_monthly = get_stripe_price_id('plus', 'monthly')
@@ -562,16 +577,20 @@ def upgrade_subscription(user_id: str, new_plan: Literal["plus", "pro_plus"], ne
         raise ValueError(f"STRIPE_PRICE_ID for {new_plan} ({period_name}) is not set. Set {env_var} in environment.")
     
     try:
-        # Retrieve the current subscription with expanded items
-        subscription = stripe.Subscription.retrieve(
-            subscription_id,
-            expand=['items.data']
-        )
+        # Retrieve the current subscription
+        subscription = stripe.Subscription.retrieve(subscription_id)
         
         if subscription.status not in ['active', 'trialing']:
             raise ValueError(f"Cannot upgrade subscription. Subscription status is: {subscription.status}")
         
-        items = subscription.items.data if hasattr(subscription.items, 'data') else []
+        # Get subscription items - items is a ListObject
+        if hasattr(subscription.items, 'data'):
+            items = subscription.items.data
+        else:
+            # If items is not expanded, retrieve them separately
+            items_list = subscription.items.list(limit=1)
+            items = items_list.data if hasattr(items_list, 'data') else []
+        
         if not items:
             raise ValueError("No subscription items found")
         
