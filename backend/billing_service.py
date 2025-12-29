@@ -451,3 +451,149 @@ def switch_subscription_billing_period(user_id: str, new_billing_period: Literal
         logger.error(f"Unexpected error switching subscription: {e}")
         raise ValueError(f"Billing service error: {str(e)}")
 
+
+def get_subscription_details(subscription_id: str) -> Optional[dict]:
+    """
+    Get subscription details including plan and billing period from Stripe.
+    
+    Args:
+        subscription_id: Stripe subscription ID
+    
+    Returns:
+        Dictionary with 'plan' and 'billing_period', or None if not found
+    """
+    if not is_billing_configured():
+        return None
+    
+    secret_key = get_stripe_secret_key()
+    if not secret_key:
+        return None
+    
+    stripe.api_key = secret_key
+    
+    try:
+        subscription = stripe.Subscription.retrieve(subscription_id)
+        
+        if not subscription.items.data:
+            return None
+        
+        price_id = subscription.items.data[0].price.id
+        
+        # Determine plan and billing period from price ID
+        plus_price_id_monthly = get_stripe_price_id('plus', 'monthly')
+        plus_price_id_yearly = get_stripe_price_id('plus', 'yearly')
+        pro_plus_price_id_monthly = get_stripe_price_id('pro_plus', 'monthly')
+        pro_plus_price_id_yearly = get_stripe_price_id('pro_plus', 'yearly')
+        
+        plan = None
+        billing_period = None
+        
+        if price_id == plus_price_id_monthly:
+            plan = 'plus'
+            billing_period = 'monthly'
+        elif price_id == plus_price_id_yearly:
+            plan = 'plus'
+            billing_period = 'yearly'
+        elif price_id == pro_plus_price_id_monthly:
+            plan = 'pro_plus'
+            billing_period = 'monthly'
+        elif price_id == pro_plus_price_id_yearly:
+            plan = 'pro_plus'
+            billing_period = 'yearly'
+        
+        if plan and billing_period:
+            return {
+                'plan': plan,
+                'billing_period': billing_period,
+            }
+        
+        return None
+    except stripe.error.StripeError as e:
+        logger.error(f"Stripe API error getting subscription details: {e}")
+        return None
+    except Exception as e:
+        logger.error(f"Unexpected error getting subscription details: {e}")
+        return None
+
+
+def upgrade_subscription(user_id: str, new_plan: Literal["plus", "pro_plus"], new_billing_period: Literal["monthly", "yearly"]) -> dict:
+    """
+    Upgrade or change subscription plan and/or billing period.
+    
+    Args:
+        user_id: Appwrite user ID
+        new_plan: New plan (plus or pro_plus)
+        new_billing_period: New billing period (monthly or yearly)
+    
+    Returns:
+        Dictionary with success status and message
+    """
+    if not is_billing_configured():
+        raise ValueError("Billing is not configured.")
+    
+    secret_key = get_stripe_secret_key()
+    if not secret_key:
+        raise ValueError("STRIPE_SECRET_KEY is not set")
+    
+    stripe.api_key = secret_key
+    
+    # Get user's profile
+    profile = get_user_profile(user_id)
+    if not profile:
+        raise ValueError(f"User profile not found for user {user_id}")
+    
+    subscription_id = profile.get("stripeSubscriptionId")
+    if not subscription_id:
+        raise ValueError("No active subscription found. Please subscribe first.")
+    
+    # Get new price ID
+    new_price_id = get_stripe_price_id(new_plan, new_billing_period)
+    if not new_price_id:
+        period_name = "yearly" if new_billing_period == "yearly" else "monthly"
+        env_var = f"STRIPE_PRICE_ID_{new_plan.upper()}{'_YEARLY' if new_billing_period == 'yearly' else ''}"
+        raise ValueError(f"STRIPE_PRICE_ID for {new_plan} ({period_name}) is not set. Set {env_var} in environment.")
+    
+    try:
+        # Retrieve the current subscription
+        subscription = stripe.Subscription.retrieve(subscription_id)
+        
+        if subscription.status not in ['active', 'trialing']:
+            raise ValueError(f"Cannot upgrade subscription. Subscription status is: {subscription.status}")
+        
+        if not subscription.items.data:
+            raise ValueError("No subscription items found")
+        
+        subscription_item_id = subscription.items.data[0].id
+        
+        # Update the subscription with the new plan/price
+        updated_subscription = stripe.Subscription.modify(
+            subscription_id,
+            items=[{
+                'id': subscription_item_id,
+                'price': new_price_id,
+            }],
+            proration_behavior='always_invoice',
+            metadata={
+                'user_id': user_id,
+                'plan': new_plan,
+                'billing_period': new_billing_period,
+                'app': 'autoiq',
+            }
+        )
+        
+        logger.info(f"Successfully upgraded subscription {subscription_id} to {new_plan} ({new_billing_period}) for user {user_id}")
+        
+        return {
+            'success': True,
+            'message': f'Subscription successfully upgraded to {new_plan} ({new_billing_period})',
+            'subscription_id': subscription_id,
+            'plan': new_plan,
+            'billing_period': new_billing_period,
+        }
+    except stripe.error.StripeError as e:
+        logger.error(f"Stripe API error upgrading subscription: {e}")
+        raise ValueError(f"Failed to upgrade subscription: {str(e)}")
+    except Exception as e:
+        logger.error(f"Unexpected error upgrading subscription: {e}")
+        raise ValueError(f"Billing service error: {str(e)}")
+

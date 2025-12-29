@@ -31,6 +31,8 @@ from models import (
     PortalSessionResponse,
     SwitchBillingPeriodRequest,
     SwitchBillingPeriodResponse,
+    UpgradeSubscriptionRequest,
+    UpgradeSubscriptionResponse,
     RegisterRequest,
     LoginRequest,
     AuthResponse,
@@ -531,10 +533,31 @@ async def get_subscription_status(user: Dict[str, Any] = Depends(get_current_use
     subscription_id = user.get("stripeSubscriptionId") or user.get("stripe_subscription_id")
     customer_id = user.get("stripeCustomerId") or user.get("stripe_customer_id")
     has_sub = bool(subscription_id and customer_id)
+    
+    # Get current plan and billing period from Stripe if subscription exists
+    current_plan = None
+    current_billing_period = None
+    
+    if has_sub and subscription_id:
+        try:
+            from billing_service import get_subscription_details
+            sub_details = get_subscription_details(subscription_id)
+            if sub_details:
+                current_plan = sub_details.get("plan")
+                current_billing_period = sub_details.get("billing_period")
+        except Exception as e:
+            logger.warning(f"Failed to get subscription details: {e}")
+            # Fallback to user's plan if we can't get from Stripe
+            user_plan = user.get("plan", "free")
+            if user_plan in ["plus", "pro_plus"]:
+                current_plan = user_plan
+    
     return SubscriptionStatusResponse(
         has_subscription=has_sub,
         subscription_id=subscription_id,
         customer_id=customer_id,
+        current_plan=current_plan,
+        current_billing_period=current_billing_period,
     )
 
 
@@ -579,7 +602,17 @@ async def create_portal(request: PortalSessionRequest, user: Dict[str, Any] = De
     return_url = request.return_url or "https://buildwithdani.com/autoiq/subscription-managed"
     
     try:
-        result = create_portal_session(user.get("stripe_customer_id"), return_url)
+        # Get customer_id - check both camelCase and snake_case
+        customer_id_for_portal = user.get("stripeCustomerId") or user.get("stripe_customer_id")
+        if not customer_id_for_portal:
+            raise HTTPException(
+                status_code=404,
+                detail={
+                    "code": "no_customer_id",
+                    "message": "Customer ID is required. Please contact support if you have an active subscription."
+                }
+            )
+        result = create_portal_session(customer_id_for_portal, return_url)
         return PortalSessionResponse(**result)
     except ValueError as e:
         logger.error(f"Billing service error: {e}")
@@ -601,6 +634,51 @@ async def create_portal(request: PortalSessionRequest, user: Dict[str, Any] = De
         )
 
 
+@app.post("/api/billing/upgrade-subscription", response_model=UpgradeSubscriptionResponse)
+async def upgrade_subscription(request: UpgradeSubscriptionRequest, user: Dict[str, Any] = Depends(get_current_user_dependency)):
+    """Upgrade subscription to different plan and/or billing period."""
+    if not is_billing_configured():
+        raise HTTPException(
+            status_code=503,
+            detail={
+                "code": "billing_unavailable",
+                "message": "Billing is not yet configured. Please contact support."
+            }
+        )
+    
+    if not user.get("stripeSubscriptionId") and not user.get("stripe_subscription_id"):
+        raise HTTPException(
+            status_code=404,
+            detail={
+                "code": "no_subscription",
+                "message": "No active subscription found. Please subscribe first."
+            }
+        )
+    
+    try:
+        from billing_service import upgrade_subscription as upgrade_sub
+        result = upgrade_sub(user.get("id"), request.plan, request.billing_period)
+        return UpgradeSubscriptionResponse(**result)
+    except ValueError as e:
+        logger.error(f"Billing service error: {e}")
+        raise HTTPException(
+            status_code=400,
+            detail={
+                "code": "billing_error",
+                "message": str(e)
+            }
+        )
+    except Exception as e:
+        logger.error(f"Unexpected error in upgrade subscription endpoint: {e}", exc_info=True)
+        raise HTTPException(
+            status_code=500,
+            detail={
+                "code": "internal_error",
+                "message": "An unexpected error occurred while upgrading subscription."
+            }
+        )
+
+
 @app.post("/api/billing/switch-billing-period", response_model=SwitchBillingPeriodResponse)
 async def switch_billing_period(request: SwitchBillingPeriodRequest, user: Dict[str, Any] = Depends(get_current_user_dependency)):
     """Switch existing subscription to different billing period."""
@@ -613,7 +691,7 @@ async def switch_billing_period(request: SwitchBillingPeriodRequest, user: Dict[
             }
         )
     
-    if not user.get("stripe_subscription_id"):
+    if not user.get("stripeSubscriptionId") and not user.get("stripe_subscription_id"):
         raise HTTPException(
             status_code=404,
             detail={
@@ -642,6 +720,51 @@ async def switch_billing_period(request: SwitchBillingPeriodRequest, user: Dict[
             detail={
                 "code": "internal_error",
                 "message": "An unexpected error occurred while switching billing period."
+            }
+        )
+
+
+@app.post("/api/billing/upgrade-subscription", response_model=UpgradeSubscriptionResponse)
+async def upgrade_subscription(request: UpgradeSubscriptionRequest, user: Dict[str, Any] = Depends(get_current_user_dependency)):
+    """Upgrade subscription to different plan and/or billing period."""
+    if not is_billing_configured():
+        raise HTTPException(
+            status_code=503,
+            detail={
+                "code": "billing_unavailable",
+                "message": "Billing is not yet configured. Please contact support."
+            }
+        )
+    
+    if not user.get("stripeSubscriptionId") and not user.get("stripe_subscription_id"):
+        raise HTTPException(
+            status_code=404,
+            detail={
+                "code": "no_subscription",
+                "message": "No active subscription found. Please subscribe first."
+            }
+        )
+    
+    try:
+        from billing_service import upgrade_subscription
+        result = upgrade_subscription(user.get("id"), request.plan, request.billing_period)
+        return UpgradeSubscriptionResponse(**result)
+    except ValueError as e:
+        logger.error(f"Billing service error: {e}")
+        raise HTTPException(
+            status_code=400,
+            detail={
+                "code": "billing_error",
+                "message": str(e)
+            }
+        )
+    except Exception as e:
+        logger.error(f"Unexpected error in upgrade subscription endpoint: {e}", exc_info=True)
+        raise HTTPException(
+            status_code=500,
+            detail={
+                "code": "internal_error",
+                "message": "An unexpected error occurred while upgrading subscription."
             }
         )
 

@@ -28,6 +28,12 @@ export default function Settings({
   const [billingPeriod, setBillingPeriod] = useState<'monthly' | 'yearly'>('monthly');
   const { showToast } = useToast();
   
+  // Backend connection statuses
+  const [railwayBackendStatus, setRailwayBackendStatus] = useState<'checking' | 'connected' | 'disconnected'>('checking');
+  const [localBackendStatus, setLocalBackendStatus] = useState<'checking' | 'connected' | 'disconnected'>('checking');
+  const [checkingRailway, setCheckingRailway] = useState(false);
+  const [checkingLocal, setCheckingLocal] = useState(false);
+  
   // Developer Tools password protection
   const [devToolsUnlocked, setDevToolsUnlocked] = useState(false);
   const [devPassword, setDevPassword] = useState('');
@@ -43,6 +49,19 @@ export default function Settings({
     loadStatus();
     loadBillingConfig();
     loadSubscriptionStatus();
+    // Check backend connections on mount
+    checkRailwayBackend();
+    checkLocalBackend();
+  }, []);
+
+  // Check backend connections periodically
+  useEffect(() => {
+    const interval = setInterval(() => {
+      checkRailwayBackend();
+      checkLocalBackend();
+    }, 10000); // Check every 10 seconds
+
+    return () => clearInterval(interval);
   }, []);
 
   const loadSubscriptionStatus = async () => {
@@ -232,8 +251,41 @@ export default function Settings({
     try {
       const response = await apiClient.getStatus();
       setStatus(response);
+      // Update local backend status based on OBD connection
+      setLocalBackendStatus(response?.connected ? 'connected' : 'disconnected');
     } catch (error) {
       console.error('Failed to load status:', error);
+      setLocalBackendStatus('disconnected');
+    }
+  };
+
+  const checkRailwayBackend = async () => {
+    if (checkingRailway) return;
+    setCheckingRailway(true);
+    try {
+      // Try to fetch billing config as a health check
+      await apiClient.getBillingConfig();
+      setRailwayBackendStatus('connected');
+    } catch (error) {
+      console.error('Railway backend check failed:', error);
+      setRailwayBackendStatus('disconnected');
+    } finally {
+      setCheckingRailway(false);
+    }
+  };
+
+  const checkLocalBackend = async () => {
+    if (checkingLocal) return;
+    setCheckingLocal(true);
+    try {
+      const response = await apiClient.getStatus();
+      setLocalBackendStatus(response?.connected ? 'connected' : 'disconnected');
+      setStatus(response);
+    } catch (error) {
+      console.error('Local backend check failed:', error);
+      setLocalBackendStatus('disconnected');
+    } finally {
+      setCheckingLocal(false);
     }
   };
 
@@ -360,6 +412,47 @@ export default function Settings({
       } else {
         showToast(errorMessage, 'error');
       }
+    } finally {
+      setLoadingBilling(false);
+    }
+  };
+
+  const handleUpgradeSubscription = async (newPlan: 'plus' | 'pro_plus', newBillingPeriod: 'monthly' | 'yearly') => {
+    setLoadingBilling(true);
+    try {
+      await apiClient.upgradeSubscription({
+        plan: newPlan,
+        billing_period: newBillingPeriod,
+      });
+      showToast(`Successfully upgraded to ${newPlan === 'plus' ? 'AutoIQ+' : 'Pro+'} ${newBillingPeriod === 'monthly' ? 'Monthly' : 'Yearly'}!`, 'success');
+      // Refresh user data and subscription status
+      await refreshUser();
+      await loadSubscriptionStatus();
+      if (onPlanChange) {
+        onPlanChange();
+      }
+    } catch (error: any) {
+      console.error('Upgrade subscription error:', error);
+      let errorMessage = 'Failed to upgrade subscription. Please try again.';
+      if (error?.response?.data?.detail) {
+        const detail = error.response.data.detail;
+        if (typeof detail === 'string') {
+          errorMessage = detail;
+        } else if (typeof detail === 'object') {
+          if (detail.message) {
+            errorMessage = detail.message;
+          } else if (detail.detail) {
+            errorMessage = detail.detail;
+          } else if (detail.code) {
+            errorMessage = detail.code;
+          }
+        }
+      } else if (error?.response?.data?.message) {
+        errorMessage = error.response.data.message;
+      } else if (error?.message) {
+        errorMessage = error.message;
+      }
+      showToast(errorMessage, 'error');
     } finally {
       setLoadingBilling(false);
     }
@@ -738,29 +831,77 @@ export default function Settings({
               </div>
             </div>
           ) : (
-            <div className="space-y-4">
+            <div className="space-y-6">
+              {/* Railway Backend (Public SaaS) */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Backend URL
+                  Railway Backend (Public SaaS)
                 </label>
                 <input
                   type="text"
-                  value="http://127.0.0.1:8001"
+                  value={typeof window !== 'undefined' && (window as any).electron?.railwayUrl || import.meta.env.VITE_RAILWAY_API_URL || 'https://autoiq-production.up.railway.app'}
                   readOnly
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-600 font-mono text-sm"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-600 font-mono text-sm mb-3"
                 />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Connection Status
-                </label>
                 <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
                   <div className="flex items-center gap-3">
-                    {status?.connected ? (
+                    {railwayBackendStatus === 'checking' ? (
+                      <>
+                        <div className="w-3 h-3 bg-yellow-500 rounded-full animate-pulse"></div>
+                        <span className="text-gray-700">Checking connection...</span>
+                      </>
+                    ) : railwayBackendStatus === 'connected' ? (
+                      <>
+                        <div className="w-3 h-3 bg-green-500 rounded-full animate-pulse"></div>
+                        <span className="text-gray-700">Connected</span>
+                      </>
+                    ) : (
+                      <>
+                        <div className="w-3 h-3 bg-red-500 rounded-full"></div>
+                        <span className="text-gray-700">Not connected</span>
+                      </>
+                    )}
+                  </div>
+                  <button
+                    onClick={checkRailwayBackend}
+                    disabled={checkingRailway}
+                    className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {checkingRailway ? 'Checking...' : 'Recheck Connection'}
+                  </button>
+                </div>
+                <p className="text-xs text-gray-500 mt-2">
+                  Used for: Authentication, Billing, AI Diagnostics, Account Management
+                </p>
+              </div>
+
+              {/* Local Backend (OBD) */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Local Backend (OBD Device)
+                </label>
+                <input
+                  type="text"
+                  value={typeof window !== 'undefined' && (window as any).electron?.localUrl || import.meta.env.VITE_API_URL || 'http://127.0.0.1:8001'}
+                  readOnly
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-600 font-mono text-sm mb-3"
+                />
+                <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                  <div className="flex items-center gap-3">
+                    {localBackendStatus === 'checking' ? (
+                      <>
+                        <div className="w-3 h-3 bg-yellow-500 rounded-full animate-pulse"></div>
+                        <span className="text-gray-700">Checking connection...</span>
+                      </>
+                    ) : localBackendStatus === 'connected' ? (
                       <>
                         <div className="w-3 h-3 bg-green-500 rounded-full animate-pulse"></div>
                         <span className="text-gray-700">
-                          Connected on <span className="font-mono font-semibold">{status.port}</span>
+                          {status?.connected ? (
+                            <>Connected on <span className="font-mono font-semibold">{status.port}</span></>
+                          ) : (
+                            'Connected'
+                          )}
                         </span>
                       </>
                     ) : (
@@ -771,12 +912,21 @@ export default function Settings({
                     )}
                   </div>
                   <button
-                    onClick={handleReconnect}
-                    className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors text-sm"
+                    onClick={async () => {
+                      await checkLocalBackend();
+                      if (status && !status.connected) {
+                        handleReconnect();
+                      }
+                    }}
+                    disabled={checkingLocal}
+                    className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors text-sm disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    Reconnect Backend
+                    {checkingLocal ? 'Checking...' : 'Reconnect Backend'}
                   </button>
                 </div>
+                <p className="text-xs text-gray-500 mt-2">
+                  Used for: OBD Device Connection, Live Data, Trouble Codes, Vehicle Info
+                </p>
               </div>
             </div>
           )}
@@ -795,7 +945,19 @@ export default function Settings({
                       <div>
                         <div className="font-semibold text-green-900 mb-1">Active Subscription</div>
                         <div className="text-sm text-green-700">
-                          You are currently on the <strong>{plan === 'plus' ? 'AutoIQ+' : 'Pro+'}</strong> plan.
+                          {subscriptionStatus?.current_plan && subscriptionStatus?.current_billing_period ? (
+                            <>
+                              Current Subscription: <strong>
+                                {subscriptionStatus.current_plan === 'plus' ? 'AutoIQ+' : 'Pro+'} 
+                                {' '}
+                                {subscriptionStatus.current_billing_period === 'monthly' ? 'Monthly' : 'Yearly'}
+                              </strong>
+                            </>
+                          ) : (
+                            <>
+                              You are currently on the <strong>{plan === 'plus' ? 'AutoIQ+' : 'Pro+'}</strong> plan.
+                            </>
+                          )}
                           {subscriptionStatus?.subscription_id && (
                             <div className="mt-1 text-xs text-green-600">
                               Subscription ID: {subscriptionStatus.subscription_id.substring(0, 20)}...
@@ -818,77 +980,140 @@ export default function Settings({
                     </div>
                   </div>
 
-                  {/* Billing Period Switcher for Active Subscriptions */}
+                  {/* Billing Period Switcher & Upgrade Options for Active Subscriptions */}
                   {subscriptionStatus?.has_subscription && (plan === 'plus' || plan === 'pro_plus') && (
                     <div className="bg-blue-50 border-2 border-blue-200 rounded-xl p-6">
                       <div className="flex items-center justify-between mb-4">
                         <div>
-                          <h4 className="text-lg font-bold text-blue-900 mb-1">Switch Billing Period</h4>
+                          <h4 className="text-lg font-bold text-blue-900 mb-1">Switch Billing Period & Upgrade</h4>
                           <p className="text-sm text-blue-700">
-                            Change your subscription from monthly to yearly billing, or vice versa.
+                            {subscriptionStatus?.current_plan && subscriptionStatus?.current_billing_period ? (
+                              <>Current Subscription: <strong>{subscriptionStatus.current_plan === 'plus' ? 'AutoIQ+' : 'Pro+'}</strong> {subscriptionStatus.current_billing_period === 'monthly' ? 'Monthly' : 'Yearly'}</>
+                            ) : (
+                              <>Change your subscription billing period or upgrade to a different plan.</>
+                            )}
                           </p>
                         </div>
                       </div>
                       
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
-                        {/* Switch to Monthly */}
-                        <div className="bg-white rounded-lg p-4 border-2 border-blue-200">
-                          <div className="flex items-center justify-between mb-3">
-                            <div>
-                              <div className="font-bold text-gray-900">Monthly Billing</div>
-                              <div className="text-sm text-gray-600 mt-1">
-                                {plan === 'plus' ? '$7.99/month' : '$19.99/month'}
+                        {/* Switch to Monthly (only show if currently yearly) */}
+                        {subscriptionStatus?.current_billing_period !== 'monthly' && (
+                          <div className="bg-white rounded-lg p-4 border-2 border-blue-200">
+                            <div className="flex items-center justify-between mb-3">
+                              <div>
+                                <div className="font-bold text-gray-900">Monthly Billing</div>
+                                <div className="text-sm text-gray-600 mt-1">
+                                  {subscriptionStatus?.current_plan === 'plus' ? '$7.99/month' : '$19.99/month'}
+                                </div>
+                              </div>
+                              <div className="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center">
+                                <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                </svg>
                               </div>
                             </div>
-                            <div className="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center">
-                              <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                              </svg>
-                            </div>
+                            <button
+                              onClick={() => handleSwitchBillingPeriod('monthly')}
+                              disabled={loadingBilling}
+                              className="w-full btn-premium py-2.5 text-sm font-bold disabled:opacity-50"
+                            >
+                              {loadingBilling ? 'Processing...' : 'Switch to Monthly'}
+                            </button>
                           </div>
-                          <button
-                            onClick={() => handleSwitchBillingPeriod('monthly')}
-                            disabled={loadingBilling}
-                            className="w-full btn-premium py-2.5 text-sm font-bold disabled:opacity-50"
-                          >
-                            {loadingBilling ? 'Processing...' : 'Switch to Monthly'}
-                          </button>
-                        </div>
+                        )}
 
-                        {/* Switch to Yearly */}
-                        <div className="bg-white rounded-lg p-4 border-2 border-green-200 relative overflow-hidden">
-                          <div className="absolute top-2 right-2">
-                            <span className="bg-green-500 text-white text-xs font-bold px-2 py-1 rounded-full">Save</span>
-                          </div>
-                          <div className="flex items-center justify-between mb-3">
-                            <div>
-                              <div className="font-bold text-gray-900">Yearly Billing</div>
-                              <div className="text-sm text-gray-600 mt-1">
-                                {plan === 'plus' ? '$79/year' : '$199/year'}
+                        {/* Switch to Yearly (only show if currently monthly) */}
+                        {subscriptionStatus?.current_billing_period !== 'yearly' && (
+                          <div className="bg-white rounded-lg p-4 border-2 border-green-200 relative overflow-hidden">
+                            <div className="absolute top-2 right-2">
+                              <span className="bg-green-500 text-white text-xs font-bold px-2 py-1 rounded-full">Save</span>
+                            </div>
+                            <div className="flex items-center justify-between mb-3">
+                              <div>
+                                <div className="font-bold text-gray-900">Yearly Billing</div>
+                                <div className="text-sm text-gray-600 mt-1">
+                                  {subscriptionStatus?.current_plan === 'plus' ? '$79/year' : '$199/year'}
+                                </div>
+                                <div className="text-xs text-green-600 font-semibold mt-1">
+                                  {subscriptionStatus?.current_plan === 'plus' ? 'Save $16.88/year' : 'Save $40.88/year'}
+                                </div>
                               </div>
-                              <div className="text-xs text-green-600 font-semibold mt-1">
-                                {plan === 'plus' ? 'Save $16.88/year' : 'Save $40.88/year'}
+                              <div className="w-12 h-12 rounded-full bg-green-100 flex items-center justify-center">
+                                <svg className="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                </svg>
                               </div>
                             </div>
-                            <div className="w-12 h-12 rounded-full bg-green-100 flex items-center justify-center">
-                              <svg className="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                              </svg>
-                            </div>
+                            <button
+                              onClick={() => handleSwitchBillingPeriod('yearly')}
+                              disabled={loadingBilling}
+                              className="w-full bg-gradient-to-r from-green-600 to-emerald-600 text-white py-2.5 rounded-xl font-bold shadow-lg hover:shadow-xl transform hover:scale-[1.02] transition-all duration-200 disabled:opacity-50"
+                            >
+                              {loadingBilling ? 'Processing...' : 'Switch to Yearly'}
+                            </button>
                           </div>
-                          <button
-                            onClick={() => handleSwitchBillingPeriod('yearly')}
-                            disabled={loadingBilling}
-                            className="w-full bg-gradient-to-r from-green-600 to-emerald-600 text-white py-2.5 rounded-xl font-bold shadow-lg hover:shadow-xl transform hover:scale-[1.02] transition-all duration-200 disabled:opacity-50"
-                          >
-                            {loadingBilling ? 'Processing...' : 'Switch to Yearly'}
-                          </button>
-                        </div>
+                        )}
+
+                        {/* Upgrade to Pro+ Monthly (only show if currently on Plus) */}
+                        {subscriptionStatus?.current_plan === 'plus' && subscriptionStatus?.current_billing_period !== 'monthly' && (
+                          <div className="bg-white rounded-lg p-4 border-2 border-purple-200 relative overflow-hidden">
+                            <div className="absolute top-2 right-2">
+                              <span className="bg-purple-500 text-white text-xs font-bold px-2 py-1 rounded-full">Upgrade</span>
+                            </div>
+                            <div className="flex items-center justify-between mb-3">
+                              <div>
+                                <div className="font-bold text-gray-900">Pro+ Monthly</div>
+                                <div className="text-sm text-gray-600 mt-1">$19.99/month</div>
+                              </div>
+                              <div className="w-12 h-12 rounded-full bg-purple-100 flex items-center justify-center">
+                                <svg className="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                                </svg>
+                              </div>
+                            </div>
+                            <button
+                              onClick={() => handleUpgradeSubscription('pro_plus', 'monthly')}
+                              disabled={loadingBilling}
+                              className="w-full bg-gradient-to-r from-purple-600 to-indigo-600 text-white py-2.5 rounded-xl font-bold shadow-lg hover:shadow-xl transform hover:scale-[1.02] transition-all duration-200 disabled:opacity-50"
+                            >
+                              {loadingBilling ? 'Processing...' : 'Upgrade to Pro+ Monthly'}
+                            </button>
+                          </div>
+                        )}
+
+                        {/* Upgrade to Pro+ Yearly (only show if currently on Plus) */}
+                        {subscriptionStatus?.current_plan === 'plus' && subscriptionStatus?.current_billing_period !== 'yearly' && (
+                          <div className="bg-white rounded-lg p-4 border-2 border-purple-200 relative overflow-hidden">
+                            <div className="absolute top-2 right-2">
+                              <span className="bg-purple-500 text-white text-xs font-bold px-2 py-1 rounded-full">Upgrade</span>
+                            </div>
+                            <div className="flex items-center justify-between mb-3">
+                              <div>
+                                <div className="font-bold text-gray-900">Pro+ Yearly</div>
+                                <div className="text-sm text-gray-600 mt-1">$199/year</div>
+                                <div className="text-xs text-green-600 font-semibold mt-1">Save $40.88/year</div>
+                              </div>
+                              <div className="w-12 h-12 rounded-full bg-purple-100 flex items-center justify-center">
+                                <svg className="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                                </svg>
+                              </div>
+                            </div>
+                            <button
+                              onClick={() => handleUpgradeSubscription('pro_plus', 'yearly')}
+                              disabled={loadingBilling}
+                              className="w-full bg-gradient-to-r from-purple-600 to-indigo-600 text-white py-2.5 rounded-xl font-bold shadow-lg hover:shadow-xl transform hover:scale-[1.02] transition-all duration-200 disabled:opacity-50"
+                            >
+                              {loadingBilling ? 'Processing...' : 'Upgrade to Pro+ Yearly'}
+                            </button>
+                          </div>
+                        )}
                       </div>
 
                       <div className="mt-4 bg-blue-50 border border-blue-200 rounded-lg p-3">
                         <p className="text-xs text-blue-800">
-                          <strong>Note:</strong> Switching billing periods updates your existing subscription immediately. You'll be charged a prorated amount for the difference, and your billing cycle will be adjusted accordingly.
+                          <strong>Note:</strong> Switching billing periods or upgrading plans updates your existing subscription immediately. You'll be charged a prorated amount for the difference, and your billing cycle will be adjusted accordingly.
                         </p>
                       </div>
                     </div>

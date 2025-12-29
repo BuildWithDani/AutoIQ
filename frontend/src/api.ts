@@ -15,6 +15,8 @@ import type {
   PortalSessionResponse,
   SwitchBillingPeriodRequest,
   SwitchBillingPeriodResponse,
+  UpgradeSubscriptionRequest,
+  UpgradeSubscriptionResponse,
   RegisterRequest,
   LoginRequest,
   AuthResponse,
@@ -345,6 +347,25 @@ export const apiClient = {
         const detail = error.response.data.detail;
         if (typeof detail === 'object') {
           const message = detail.message || detail.code || 'Failed to switch billing period';
+          throw new Error(message);
+        } else if (typeof detail === 'string') {
+          throw new Error(detail);
+        }
+      }
+      throw error;
+    }
+  },
+
+  async upgradeSubscription(request: UpgradeSubscriptionRequest): Promise<UpgradeSubscriptionResponse> {
+    try {
+      const response = await api.post<UpgradeSubscriptionResponse>('/api/billing/upgrade-subscription', request);
+      return response.data;
+    } catch (error: any) {
+      // Extract detailed error message from response
+      if (error.response?.data?.detail) {
+        const detail = error.response.data.detail;
+        if (typeof detail === 'object') {
+          const message = detail.message || detail.code || 'Failed to upgrade subscription';
           throw new Error(message);
         } else if (typeof detail === 'string') {
           throw new Error(detail);

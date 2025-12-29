@@ -103,6 +103,8 @@ export interface SubscriptionStatusResponse {
   has_subscription: boolean;
   subscription_id: string | null;
   customer_id: string | null;
+  current_plan?: 'plus' | 'pro_plus' | null;
+  current_billing_period?: 'monthly' | 'yearly' | null;
 }
 
 export interface PortalSessionRequest {
@@ -180,6 +182,19 @@ export interface SwitchBillingPeriodResponse {
   success: boolean;
   message: string;
   subscription_id?: string | null;
+  billing_period?: 'monthly' | 'yearly' | null;
+}
+
+export interface UpgradeSubscriptionRequest {
+  plan: 'plus' | 'pro_plus';
+  billing_period: 'monthly' | 'yearly';
+}
+
+export interface UpgradeSubscriptionResponse {
+  success: boolean;
+  message: string;
+  subscription_id?: string | null;
+  plan?: 'plus' | 'pro_plus' | null;
   billing_period?: 'monthly' | 'yearly' | null;
 }
 

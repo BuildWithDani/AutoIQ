@@ -100,6 +100,8 @@ class SubscriptionStatusResponse(BaseModel):
     has_subscription: bool
     subscription_id: Optional[str] = None
     customer_id: Optional[str] = None
+    current_plan: Optional[Literal["plus", "pro_plus"]] = None
+    current_billing_period: Optional[Literal["monthly", "yearly"]] = None
 
 
 class PortalSessionRequest(BaseModel):
