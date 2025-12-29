@@ -414,14 +414,10 @@ def switch_subscription_billing_period(user_id: str, new_billing_period: Literal
         if subscription.status not in ['active', 'trialing']:
             raise ValueError(f"Cannot switch billing period. Subscription status is: {subscription.status}")
         
-        # Get subscription items - items is a ListObject, access via .data
-        # If items is not expanded, we need to list them
-        if hasattr(subscription.items, 'data'):
-            items = subscription.items.data
-        else:
-            # If items is not expanded, retrieve them separately
-            items_list = subscription.items.list(limit=1)
-            items = items_list.data if hasattr(items_list, 'data') else []
+        # Get subscription items using SubscriptionItem.list()
+        # This is the proper way to retrieve items for a subscription
+        items_list = stripe.SubscriptionItem.list(subscription=subscription_id, limit=10)
+        items = items_list.data if hasattr(items_list, 'data') else []
         
         if not items:
             raise ValueError("No subscription items found")
@@ -482,13 +478,10 @@ def get_subscription_details(subscription_id: str) -> Optional[dict]:
     try:
         subscription = stripe.Subscription.retrieve(subscription_id)
         
-        # Get subscription items - items is a ListObject
-        if hasattr(subscription.items, 'data'):
-            items = subscription.items.data
-        else:
-            # If items is not expanded, retrieve them separately
-            items_list = subscription.items.list(limit=1)
-            items = items_list.data if hasattr(items_list, 'data') else []
+        # Get subscription items using SubscriptionItem.list()
+        # This is the proper way to retrieve items for a subscription
+        items_list = stripe.SubscriptionItem.list(subscription=subscription_id, limit=10)
+        items = items_list.data if hasattr(items_list, 'data') else []
         
         if not items:
             return None
@@ -583,13 +576,10 @@ def upgrade_subscription(user_id: str, new_plan: Literal["plus", "pro_plus"], ne
         if subscription.status not in ['active', 'trialing']:
             raise ValueError(f"Cannot upgrade subscription. Subscription status is: {subscription.status}")
         
-        # Get subscription items - items is a ListObject
-        if hasattr(subscription.items, 'data'):
-            items = subscription.items.data
-        else:
-            # If items is not expanded, retrieve them separately
-            items_list = subscription.items.list(limit=1)
-            items = items_list.data if hasattr(items_list, 'data') else []
+        # Get subscription items using SubscriptionItem.list()
+        # This is the proper way to retrieve items for a subscription
+        items_list = stripe.SubscriptionItem.list(subscription=subscription_id, limit=10)
+        items = items_list.data if hasattr(items_list, 'data') else []
         
         if not items:
             raise ValueError("No subscription items found")
