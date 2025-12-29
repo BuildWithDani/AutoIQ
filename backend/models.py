@@ -169,3 +169,16 @@ class SwitchBillingPeriodResponse(BaseModel):
     subscription_id: Optional[str] = None
     billing_period: Optional[Literal["monthly", "yearly"]] = None
 
+
+class UpgradeSubscriptionRequest(BaseModel):
+    plan: Literal["plus", "pro_plus"]
+    billing_period: Literal["monthly", "yearly"]
+
+
+class UpgradeSubscriptionResponse(BaseModel):
+    success: bool
+    message: str
+    subscription_id: Optional[str] = None
+    plan: Optional[Literal["plus", "pro_plus"]] = None
+    billing_period: Optional[Literal["monthly", "yearly"]] = None
+
