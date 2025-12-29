@@ -289,6 +289,14 @@ export default function Settings({
     }
   };
 
+  // Helper function to censor Railway URL
+  const censorRailwayUrl = (url: string): string => {
+    if (url.includes('-production.up.railway.app')) {
+      return url.replace('-production.up.railway.app', '••••••••••••••••••••');
+    }
+    return url;
+  };
+
   const handlePlanChange = async (newPlan: 'free' | 'plus' | 'pro_plus') => {
     if (newPlan === plan) return;
     
@@ -759,9 +767,17 @@ export default function Settings({
         </div>
 
         {/* Developer Section - Password Protected */}
-        <div className="bg-white rounded-xl shadow-lg border border-gray-200 p-6">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-xl font-semibold text-gray-900">Developer Tools</h3>
+        <div className="bg-gradient-to-br from-gray-50 to-white rounded-2xl shadow-xl border-2 border-gray-200 p-8">
+          <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-gradient-to-br from-primary-500 to-primary-600 rounded-lg flex items-center justify-center shadow-md">
+                <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                </svg>
+              </div>
+              <h3 className="text-2xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent">Developer Tools</h3>
+            </div>
             {devToolsUnlocked && (
               <button
                 onClick={() => {
@@ -769,8 +785,11 @@ export default function Settings({
                   setShowDevPasswordPrompt(false);
                   sessionStorage.removeItem('autoiq_dev_tools_unlocked');
                 }}
-                className="text-sm text-gray-500 hover:text-gray-700"
+                className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition-colors text-sm font-medium flex items-center gap-2"
               >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                </svg>
                 Lock
               </button>
             )}
@@ -832,73 +851,131 @@ export default function Settings({
             </div>
           ) : (
             <div className="space-y-6">
-              {/* Railway Backend (Public SaaS) */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Railway Backend (Public SaaS)
-                </label>
-                <input
-                  type="text"
-                  value={typeof window !== 'undefined' && (window as any).electron?.railwayUrl || import.meta.env.VITE_RAILWAY_API_URL || 'https://autoiq-production.up.railway.app'}
-                  readOnly
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-600 font-mono text-sm mb-3"
-                />
-                <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+              {/* AutoIQ Backend (Public SaaS) */}
+              <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl border-2 border-blue-200 p-6 shadow-md hover:shadow-lg transition-shadow">
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl flex items-center justify-center shadow-lg">
+                    <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 12h14M5 12a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v4a2 2 0 01-2 2M5 12a2 2 0 00-2 2v4a2 2 0 002 2h14a2 2 0 002-2v-4a2 2 0 00-2-2m-2-4h.01M17 16h.01" />
+                    </svg>
+                  </div>
+                  <div>
+                    <label className="block text-lg font-bold text-gray-900">
+                      AutoIQ Backend (Public SaaS)
+                    </label>
+                    <p className="text-xs text-gray-600 mt-0.5">Cloud-hosted services</p>
+                  </div>
+                </div>
+                <div className="mb-4">
+                  <div className="relative">
+                    <input
+                      type="text"
+                      value={censorRailwayUrl(typeof window !== 'undefined' && (window as any).electron?.railwayUrl || import.meta.env.VITE_RAILWAY_API_URL || 'https://autoiq-production.up.railway.app')}
+                      readOnly
+                      className="w-full px-4 py-3 border-2 border-blue-200 rounded-lg bg-white text-gray-700 font-mono text-sm shadow-inner focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    />
+                    <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                      <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
+                      </svg>
+                    </div>
+                  </div>
+                </div>
+                <div className="flex items-center justify-between p-4 bg-white rounded-lg border-2 border-blue-100 shadow-sm">
                   <div className="flex items-center gap-3">
                     {railwayBackendStatus === 'checking' ? (
                       <>
-                        <div className="w-3 h-3 bg-yellow-500 rounded-full animate-pulse"></div>
-                        <span className="text-gray-700">Checking connection...</span>
+                        <div className="relative">
+                          <div className="w-4 h-4 bg-yellow-500 rounded-full animate-pulse"></div>
+                          <div className="absolute inset-0 w-4 h-4 bg-yellow-500 rounded-full animate-ping opacity-75"></div>
+                        </div>
+                        <span className="text-gray-700 font-medium">Checking connection...</span>
                       </>
                     ) : railwayBackendStatus === 'connected' ? (
                       <>
-                        <div className="w-3 h-3 bg-green-500 rounded-full animate-pulse"></div>
-                        <span className="text-gray-700">Connected</span>
+                        <div className="relative">
+                          <div className="w-4 h-4 bg-green-500 rounded-full animate-pulse"></div>
+                          <div className="absolute inset-0 w-4 h-4 bg-green-500 rounded-full animate-ping opacity-75"></div>
+                        </div>
+                        <span className="text-gray-700 font-semibold">Connected</span>
                       </>
                     ) : (
                       <>
-                        <div className="w-3 h-3 bg-red-500 rounded-full"></div>
-                        <span className="text-gray-700">Not connected</span>
+                        <div className="w-4 h-4 bg-red-500 rounded-full shadow-sm"></div>
+                        <span className="text-gray-700 font-medium">Not connected</span>
                       </>
                     )}
                   </div>
                   <button
                     onClick={checkRailwayBackend}
                     disabled={checkingRailway}
-                    className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="px-5 py-2.5 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-lg hover:from-blue-700 hover:to-indigo-700 transition-all text-sm font-semibold shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed transform hover:scale-105 disabled:transform-none"
                   >
-                    {checkingRailway ? 'Checking...' : 'Recheck Connection'}
+                    {checkingRailway ? (
+                      <span className="flex items-center gap-2">
+                        <svg className="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        Checking...
+                      </span>
+                    ) : (
+                      'Recheck Connection'
+                    )}
                   </button>
                 </div>
-                <p className="text-xs text-gray-500 mt-2">
-                  Used for: Authentication, Billing, AI Diagnostics, Account Management
-                </p>
+                <div className="mt-4 flex items-start gap-2 p-3 bg-blue-100/50 rounded-lg border border-blue-200">
+                  <svg className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  <p className="text-xs text-blue-800 font-medium">
+                    <strong>Used for:</strong> Authentication, Billing, AI Diagnostics, Account Management
+                  </p>
+                </div>
               </div>
 
               {/* Local Backend (OBD) */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Local Backend (OBD Device)
-                </label>
-                <input
-                  type="text"
-                  value={typeof window !== 'undefined' && (window as any).electron?.localUrl || import.meta.env.VITE_API_URL || 'http://127.0.0.1:8001'}
-                  readOnly
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-600 font-mono text-sm mb-3"
-                />
-                <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+              <div className="bg-gradient-to-br from-purple-50 to-pink-50 rounded-xl border-2 border-purple-200 p-6 shadow-md hover:shadow-lg transition-shadow">
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-pink-600 rounded-xl flex items-center justify-center shadow-lg">
+                    <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m-2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z" />
+                    </svg>
+                  </div>
+                  <div>
+                    <label className="block text-lg font-bold text-gray-900">
+                      Local Backend (OBD Device)
+                    </label>
+                    <p className="text-xs text-gray-600 mt-0.5">Device connection services</p>
+                  </div>
+                </div>
+                <div className="mb-4">
+                  <input
+                    type="text"
+                    value={typeof window !== 'undefined' && (window as any).electron?.localUrl || import.meta.env.VITE_API_URL || 'http://127.0.0.1:8001'}
+                    readOnly
+                    className="w-full px-4 py-3 border-2 border-purple-200 rounded-lg bg-white text-gray-700 font-mono text-sm shadow-inner focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+                  />
+                </div>
+                <div className="flex items-center justify-between p-4 bg-white rounded-lg border-2 border-purple-100 shadow-sm">
                   <div className="flex items-center gap-3">
                     {localBackendStatus === 'checking' ? (
                       <>
-                        <div className="w-3 h-3 bg-yellow-500 rounded-full animate-pulse"></div>
-                        <span className="text-gray-700">Checking connection...</span>
+                        <div className="relative">
+                          <div className="w-4 h-4 bg-yellow-500 rounded-full animate-pulse"></div>
+                          <div className="absolute inset-0 w-4 h-4 bg-yellow-500 rounded-full animate-ping opacity-75"></div>
+                        </div>
+                        <span className="text-gray-700 font-medium">Checking connection...</span>
                       </>
                     ) : localBackendStatus === 'connected' ? (
                       <>
-                        <div className="w-3 h-3 bg-green-500 rounded-full animate-pulse"></div>
-                        <span className="text-gray-700">
+                        <div className="relative">
+                          <div className="w-4 h-4 bg-green-500 rounded-full animate-pulse"></div>
+                          <div className="absolute inset-0 w-4 h-4 bg-green-500 rounded-full animate-ping opacity-75"></div>
+                        </div>
+                        <span className="text-gray-700 font-semibold">
                           {status?.connected ? (
-                            <>Connected on <span className="font-mono font-semibold">{status.port}</span></>
+                            <>Connected on <span className="font-mono font-bold text-purple-600">{status.port}</span></>
                           ) : (
                             'Connected'
                           )}
@@ -906,8 +983,8 @@ export default function Settings({
                       </>
                     ) : (
                       <>
-                        <div className="w-3 h-3 bg-red-500 rounded-full"></div>
-                        <span className="text-gray-700">Not connected</span>
+                        <div className="w-4 h-4 bg-red-500 rounded-full shadow-sm"></div>
+                        <span className="text-gray-700 font-medium">Not connected</span>
                       </>
                     )}
                   </div>
@@ -919,14 +996,29 @@ export default function Settings({
                       }
                     }}
                     disabled={checkingLocal}
-                    className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="px-5 py-2.5 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-lg hover:from-purple-700 hover:to-pink-700 transition-all text-sm font-semibold shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed transform hover:scale-105 disabled:transform-none"
                   >
-                    {checkingLocal ? 'Checking...' : 'Reconnect Backend'}
+                    {checkingLocal ? (
+                      <span className="flex items-center gap-2">
+                        <svg className="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        Checking...
+                      </span>
+                    ) : (
+                      'Reconnect Backend'
+                    )}
                   </button>
                 </div>
-                <p className="text-xs text-gray-500 mt-2">
-                  Used for: OBD Device Connection, Live Data, Trouble Codes, Vehicle Info
-                </p>
+                <div className="mt-4 flex items-start gap-2 p-3 bg-purple-100/50 rounded-lg border border-purple-200">
+                  <svg className="w-5 h-5 text-purple-600 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  <p className="text-xs text-purple-800 font-medium">
+                    <strong>Used for:</strong> OBD Device Connection, Live Data, Trouble Codes, Vehicle Info
+                  </p>
+                </div>
               </div>
             </div>
           )}
