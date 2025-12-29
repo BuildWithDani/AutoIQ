@@ -407,18 +407,22 @@ def switch_subscription_billing_period(user_id: str, new_billing_period: Literal
         raise ValueError(f"STRIPE_PRICE_ID for {current_plan} ({period_name}) is not set. Set {env_var} in environment.")
     
     try:
-        # Retrieve the current subscription
-        subscription = stripe.Subscription.retrieve(subscription_id)
+        # Retrieve the current subscription with expanded items
+        subscription = stripe.Subscription.retrieve(
+            subscription_id,
+            expand=['items.data']
+        )
         
         # Check if subscription is active
         if subscription.status not in ['active', 'trialing']:
             raise ValueError(f"Cannot switch billing period. Subscription status is: {subscription.status}")
         
         # Get the current subscription item ID
-        if not subscription.items.data:
+        items = subscription.items.data if hasattr(subscription.items, 'data') else []
+        if not items:
             raise ValueError("No subscription items found")
         
-        subscription_item_id = subscription.items.data[0].id
+        subscription_item_id = items[0].id
         
         # Update the subscription with the new price
         updated_subscription = stripe.Subscription.modify(
@@ -472,12 +476,16 @@ def get_subscription_details(subscription_id: str) -> Optional[dict]:
     stripe.api_key = secret_key
     
     try:
-        subscription = stripe.Subscription.retrieve(subscription_id)
+        subscription = stripe.Subscription.retrieve(
+            subscription_id,
+            expand=['items.data']
+        )
         
-        if not subscription.items.data:
+        items = subscription.items.data if hasattr(subscription.items, 'data') else []
+        if not items:
             return None
         
-        price_id = subscription.items.data[0].price.id
+        price_id = items[0].price.id
         
         # Determine plan and billing period from price ID
         plus_price_id_monthly = get_stripe_price_id('plus', 'monthly')
@@ -554,16 +562,20 @@ def upgrade_subscription(user_id: str, new_plan: Literal["plus", "pro_plus"], ne
         raise ValueError(f"STRIPE_PRICE_ID for {new_plan} ({period_name}) is not set. Set {env_var} in environment.")
     
     try:
-        # Retrieve the current subscription
-        subscription = stripe.Subscription.retrieve(subscription_id)
+        # Retrieve the current subscription with expanded items
+        subscription = stripe.Subscription.retrieve(
+            subscription_id,
+            expand=['items.data']
+        )
         
         if subscription.status not in ['active', 'trialing']:
             raise ValueError(f"Cannot upgrade subscription. Subscription status is: {subscription.status}")
         
-        if not subscription.items.data:
+        items = subscription.items.data if hasattr(subscription.items, 'data') else []
+        if not items:
             raise ValueError("No subscription items found")
         
-        subscription_item_id = subscription.items.data[0].id
+        subscription_item_id = items[0].id
         
         # Update the subscription with the new plan/price
         updated_subscription = stripe.Subscription.modify(
