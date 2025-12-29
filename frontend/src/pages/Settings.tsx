@@ -25,7 +25,7 @@ export default function Settings({
   const [billingConfig, setBillingConfig] = useState<BillingConfigResponse | null>(null);
   const [subscriptionStatus, setSubscriptionStatus] = useState<SubscriptionStatusResponse | null>(null);
   const [loadingBilling, setLoadingBilling] = useState(false);
-  const [billingPeriod, setBillingPeriod] = useState<'monthly' | 'yearly'>('monthly');
+  const [billingPeriod] = useState<'monthly' | 'yearly'>('monthly');
   const { showToast } = useToast();
   
   // Backend connection statuses
@@ -134,7 +134,7 @@ export default function Settings({
     pollInterval = setTimeout(poll, 3000);
   };
 
-  const handleUpgrade = async (targetPlan: 'plus' | 'pro_plus') => {
+  const handleUpgrade = async (targetPlan: 'plus' | 'pro_plus', overrideBillingPeriod?: 'monthly' | 'yearly') => {
     if (!billingConfig?.billing_enabled) {
       showToast('Billing is not yet configured. Please contact support.', 'warning');
       return;
@@ -152,9 +152,11 @@ export default function Settings({
       const successUrl = 'https://buildwithdani.com/autoiq/payment-success';
       const cancelUrl = 'https://buildwithdani.com/autoiq/payment-cancel';
       
+      const finalBillingPeriod = overrideBillingPeriod || billingPeriod;
+      
       const result = await apiClient.createCheckoutSession({
         plan: targetPlan,
-        billing_period: billingPeriod,
+        billing_period: finalBillingPeriod,
         success_url: successUrl,
         cancel_url: cancelUrl,
       });
@@ -432,7 +434,10 @@ export default function Settings({
         plan: newPlan,
         billing_period: newBillingPeriod,
       });
-      showToast(`Successfully upgraded to ${newPlan === 'plus' ? 'AutoIQ+' : 'Pro+'} ${newBillingPeriod === 'monthly' ? 'Monthly' : 'Yearly'}!`, 'success');
+      const isUpgrade = (plan === 'free' || plan === 'plus') && newPlan === 'pro_plus';
+      const isDowngrade = plan === 'pro_plus' && newPlan === 'plus';
+      const actionText = isUpgrade ? 'upgraded' : isDowngrade ? 'downgraded' : 'updated';
+      showToast(`Successfully ${actionText} to ${newPlan === 'plus' ? 'AutoIQ+' : 'Pro+'} ${newBillingPeriod === 'monthly' ? 'Monthly' : 'Yearly'}!`, 'success');
       // Refresh user data and subscription status
       await refreshUser();
       await loadSubscriptionStatus();
@@ -441,7 +446,7 @@ export default function Settings({
       }
     } catch (error: any) {
       console.error('Upgrade subscription error:', error);
-      let errorMessage = 'Failed to upgrade subscription. Please try again.';
+      let errorMessage = 'Failed to update subscription. Please try again.';
       if (error?.response?.data?.detail) {
         const detail = error.response.data.detail;
         if (typeof detail === 'string') {
@@ -767,16 +772,16 @@ export default function Settings({
         </div>
 
         {/* Developer Section - Password Protected */}
-        <div className="bg-gradient-to-br from-gray-50 to-white rounded-2xl shadow-xl border-2 border-gray-200 p-8">
+        <div className="bg-gradient-to-br from-purple-50/50 via-indigo-50/50 to-purple-50/50 rounded-2xl shadow-xl border-2 border-purple-200/50 p-8">
           <div className="flex items-center justify-between mb-6">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-gradient-to-br from-primary-500 to-primary-600 rounded-lg flex items-center justify-center shadow-md">
+              <div className="w-10 h-10 bg-gradient-to-br from-purple-600 via-indigo-600 to-purple-600 rounded-lg flex items-center justify-center shadow-md">
                 <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                 </svg>
               </div>
-              <h3 className="text-2xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent">Developer Tools</h3>
+              <h3 className="text-2xl font-bold bg-gradient-to-r from-purple-600 via-indigo-600 to-purple-600 bg-clip-text text-transparent">Developer Tools</h3>
             </div>
             {devToolsUnlocked && (
               <button
@@ -852,9 +857,9 @@ export default function Settings({
           ) : (
             <div className="space-y-6">
               {/* AutoIQ Backend (Public SaaS) */}
-              <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl border-2 border-blue-200 p-6 shadow-md hover:shadow-lg transition-shadow">
+              <div className="bg-gradient-to-br from-purple-50 to-indigo-50 rounded-xl border-2 border-purple-200 p-6 shadow-md hover:shadow-lg transition-shadow">
                 <div className="flex items-center gap-3 mb-4">
-                  <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl flex items-center justify-center shadow-lg">
+                  <div className="w-12 h-12 bg-gradient-to-br from-purple-600 via-indigo-600 to-purple-600 rounded-xl flex items-center justify-center shadow-lg">
                     <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 12h14M5 12a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v4a2 2 0 01-2 2M5 12a2 2 0 00-2 2v4a2 2 0 002 2h14a2 2 0 002-2v-4a2 2 0 00-2-2m-2-4h.01M17 16h.01" />
                     </svg>
@@ -872,7 +877,7 @@ export default function Settings({
                       type="text"
                       value={censorRailwayUrl(typeof window !== 'undefined' && (window as any).electron?.railwayUrl || import.meta.env.VITE_RAILWAY_API_URL || 'https://autoiq-production.up.railway.app')}
                       readOnly
-                      className="w-full px-4 py-3 border-2 border-blue-200 rounded-lg bg-white text-gray-700 font-mono text-sm shadow-inner focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      className="w-full px-4 py-3 border-2 border-purple-200 rounded-lg bg-white text-gray-700 font-mono text-sm shadow-inner focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
                     />
                     <div className="absolute right-3 top-1/2 -translate-y-1/2">
                       <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -881,7 +886,7 @@ export default function Settings({
                     </div>
                   </div>
                 </div>
-                <div className="flex items-center justify-between p-4 bg-white rounded-lg border-2 border-blue-100 shadow-sm">
+                <div className="flex items-center justify-between p-4 bg-white rounded-lg border-2 border-purple-100 shadow-sm">
                   <div className="flex items-center gap-3">
                     {railwayBackendStatus === 'checking' ? (
                       <>
@@ -909,7 +914,7 @@ export default function Settings({
                   <button
                     onClick={checkRailwayBackend}
                     disabled={checkingRailway}
-                    className="px-5 py-2.5 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-lg hover:from-blue-700 hover:to-indigo-700 transition-all text-sm font-semibold shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed transform hover:scale-105 disabled:transform-none"
+                    className="px-5 py-2.5 bg-gradient-to-r from-purple-600 via-indigo-600 to-purple-600 text-white rounded-lg hover:from-purple-700 hover:via-indigo-700 hover:to-purple-700 transition-all text-sm font-semibold shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed transform hover:scale-105 disabled:transform-none"
                   >
                     {checkingRailway ? (
                       <span className="flex items-center gap-2">
@@ -924,20 +929,20 @@ export default function Settings({
                     )}
                   </button>
                 </div>
-                <div className="mt-4 flex items-start gap-2 p-3 bg-blue-100/50 rounded-lg border border-blue-200">
-                  <svg className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <div className="mt-4 flex items-start gap-2 p-3 bg-purple-100/50 rounded-lg border border-purple-200">
+                  <svg className="w-5 h-5 text-purple-600 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
-                  <p className="text-xs text-blue-800 font-medium">
+                  <p className="text-xs text-purple-800 font-medium">
                     <strong>Used for:</strong> Authentication, Billing, AI Diagnostics, Account Management
                   </p>
                 </div>
               </div>
 
               {/* Local Backend (OBD) */}
-              <div className="bg-gradient-to-br from-purple-50 to-pink-50 rounded-xl border-2 border-purple-200 p-6 shadow-md hover:shadow-lg transition-shadow">
+              <div className="bg-gradient-to-br from-purple-50 to-indigo-50 rounded-xl border-2 border-purple-200 p-6 shadow-md hover:shadow-lg transition-shadow">
                 <div className="flex items-center gap-3 mb-4">
-                  <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-pink-600 rounded-xl flex items-center justify-center shadow-lg">
+                  <div className="w-12 h-12 bg-gradient-to-br from-purple-600 via-indigo-600 to-purple-600 rounded-xl flex items-center justify-center shadow-lg">
                     <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m-2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z" />
                     </svg>
@@ -996,7 +1001,7 @@ export default function Settings({
                       }
                     }}
                     disabled={checkingLocal}
-                    className="px-5 py-2.5 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-lg hover:from-purple-700 hover:to-pink-700 transition-all text-sm font-semibold shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed transform hover:scale-105 disabled:transform-none"
+                    className="px-5 py-2.5 bg-gradient-to-r from-purple-600 via-indigo-600 to-purple-600 text-white rounded-lg hover:from-purple-700 hover:via-indigo-700 hover:to-purple-700 transition-all text-sm font-semibold shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed transform hover:scale-105 disabled:transform-none"
                   >
                     {checkingLocal ? (
                       <span className="flex items-center gap-2">
@@ -1025,34 +1030,34 @@ export default function Settings({
         </div>
 
         {/* Account & Billing */}
-        <div className="bg-white rounded-xl shadow-lg border border-gray-200 p-6">
-          <h3 className="text-xl font-semibold text-gray-900 mb-4">Account & Billing</h3>
+        <div className="bg-gradient-to-br from-white via-purple-50/30 to-indigo-50/30 rounded-xl shadow-lg border-2 border-purple-200/50 p-6">
+          <h3 className="text-xl font-bold bg-gradient-to-r from-purple-600 via-indigo-600 to-purple-600 bg-clip-text text-transparent mb-4">Account & Billing</h3>
           
           {billingConfig?.billing_enabled ? (
             <div className="space-y-4">
               {(subscriptionStatus?.has_subscription || plan === 'plus' || plan === 'pro_plus') && (
                 <>
                   {/* Current Subscription Display */}
-                  <div className="bg-gradient-to-br from-green-50 to-emerald-50 border-2 border-green-300 rounded-xl p-6 shadow-md">
+                  <div className="bg-gradient-to-br from-purple-50 via-indigo-50 to-purple-50 border-2 border-purple-300 rounded-xl p-6 shadow-md">
                     <div className="flex items-center justify-between mb-4">
                       <div className="flex items-center gap-3">
-                        <div className="w-12 h-12 bg-gradient-to-br from-green-500 to-emerald-600 rounded-xl flex items-center justify-center shadow-lg">
+                        <div className="w-12 h-12 bg-gradient-to-br from-purple-600 via-indigo-600 to-purple-600 rounded-xl flex items-center justify-center shadow-lg">
                           <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                           </svg>
                         </div>
                         <div>
-                          <div className="font-bold text-lg text-green-900 mb-1">Current Subscription</div>
-                          <div className="text-sm text-green-700">
+                          <div className="font-bold text-lg text-purple-900 mb-1">Current Subscription</div>
+                          <div className="text-sm text-purple-700">
                             {subscriptionStatus?.current_plan && subscriptionStatus?.current_billing_period ? (
                               <>
-                                <span className="text-xl font-bold text-green-900">
+                                <span className="text-xl font-bold text-purple-900">
                                   {subscriptionStatus.current_plan === 'plus' ? 'AutoIQ+' : 'Pro+'} 
                                   {' '}
                                   {subscriptionStatus.current_billing_period === 'monthly' ? 'Monthly' : 'Yearly'}
                                 </span>
                                 {subscriptionStatus.current_plan === 'plus' && subscriptionStatus.current_billing_period === 'monthly' && (
-                                  <span className="ml-2 text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded-full font-semibold">Active</span>
+                                  <span className="ml-2 text-xs bg-purple-100 text-purple-700 px-2 py-1 rounded-full font-semibold">Active</span>
                                 )}
                               </>
                             ) : (
@@ -1062,7 +1067,7 @@ export default function Settings({
                             )}
                           </div>
                           {subscriptionStatus?.subscription_id && (
-                            <div className="mt-2 text-xs text-green-600 font-mono">
+                            <div className="mt-2 text-xs text-purple-600 font-mono">
                               ID: {subscriptionStatus.subscription_id.substring(0, 20)}...
                             </div>
                           )}
@@ -1071,7 +1076,7 @@ export default function Settings({
                       <button
                         onClick={handleManageSubscription}
                         disabled={loadingBilling || !subscriptionStatus?.has_subscription}
-                        className="px-6 py-3 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-lg font-semibold hover:from-green-700 hover:to-emerald-700 transition-all shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap transform hover:scale-105 disabled:transform-none"
+                        className="px-6 py-3 bg-gradient-to-r from-purple-600 via-indigo-600 to-purple-600 text-white rounded-lg font-semibold hover:from-purple-700 hover:via-indigo-700 hover:to-purple-700 transition-all shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap transform hover:scale-105 disabled:transform-none"
                       >
                         {loadingBilling ? (
                           <span className="flex items-center gap-2">
@@ -1107,11 +1112,11 @@ export default function Settings({
                     return (
                     <div className="space-y-6">
                       {/* Switch Billing Period Section */}
-                      <div className="bg-blue-50 border-2 border-blue-200 rounded-xl p-6">
+                      <div className="bg-gradient-to-br from-purple-50 to-indigo-50 border-2 border-purple-200 rounded-xl p-6">
                         <div className="flex items-center justify-between mb-4">
                           <div>
-                            <h4 className="text-lg font-bold text-blue-900 mb-1">Switch Billing Period</h4>
-                            <p className="text-sm text-blue-700">
+                            <h4 className="text-lg font-bold text-purple-900 mb-1">Switch Billing Period</h4>
+                            <p className="text-sm text-purple-700">
                               Change from <strong>{currentBillingPeriod === 'monthly' ? 'Monthly' : 'Yearly'}</strong> to {currentBillingPeriod === 'monthly' ? 'Yearly' : 'Monthly'} billing
                             </p>
                           </div>
@@ -1119,9 +1124,9 @@ export default function Settings({
                         
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                           {/* Current Plan - Show as reference */}
-                          <div className="bg-white rounded-lg p-4 border-2 border-green-300 shadow-sm relative">
+                          <div className="bg-white rounded-lg p-4 border-2 border-purple-300 shadow-sm relative">
                             <div className="absolute top-2 right-2">
-                              <span className="bg-green-500 text-white text-xs font-bold px-2 py-1 rounded-full">Current</span>
+                              <span className="bg-gradient-to-r from-purple-500 to-indigo-500 text-white text-xs font-bold px-2 py-1 rounded-full">Current</span>
                             </div>
                             <div className="flex items-center justify-between mb-3">
                               <div>
@@ -1137,8 +1142,8 @@ export default function Settings({
                                   }
                                 </div>
                               </div>
-                              <div className="w-12 h-12 rounded-full bg-green-100 flex items-center justify-center">
-                                <svg className="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <div className="w-12 h-12 rounded-full bg-gradient-to-br from-purple-100 to-indigo-100 flex items-center justify-center">
+                                <svg className="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                                 </svg>
                               </div>
@@ -1148,9 +1153,9 @@ export default function Settings({
 
                           {/* Switch Option */}
                           {currentBillingPeriod === 'monthly' ? (
-                            <div className="bg-white rounded-lg p-4 border-2 border-green-200 relative overflow-hidden shadow-sm">
+                            <div className="bg-white rounded-lg p-4 border-2 border-purple-200 relative overflow-hidden shadow-sm">
                               <div className="absolute top-2 right-2">
-                                <span className="bg-green-500 text-white text-xs font-bold px-2 py-1 rounded-full">Save</span>
+                                <span className="bg-gradient-to-r from-purple-500 to-indigo-500 text-white text-xs font-bold px-2 py-1 rounded-full">Save</span>
                               </div>
                               <div className="flex items-center justify-between mb-3">
                                 <div>
@@ -1160,12 +1165,12 @@ export default function Settings({
                                   <div className="text-sm text-gray-600 mt-1">
                                     {currentPlan === 'plus' ? '$79/year' : '$199/year'}
                                   </div>
-                                  <div className="text-xs text-green-600 font-semibold mt-1">
+                                  <div className="text-xs text-purple-600 font-semibold mt-1">
                                     {currentPlan === 'plus' ? 'Save $16.88/year' : 'Save $40.88/year'}
                                   </div>
                                 </div>
-                                <div className="w-12 h-12 rounded-full bg-green-100 flex items-center justify-center">
-                                  <svg className="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <div className="w-12 h-12 rounded-full bg-gradient-to-br from-purple-100 to-indigo-100 flex items-center justify-center">
+                                  <svg className="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                                   </svg>
                                 </div>
@@ -1173,13 +1178,13 @@ export default function Settings({
                               <button
                                 onClick={() => handleSwitchBillingPeriod('yearly')}
                                 disabled={loadingBilling}
-                                className="w-full bg-gradient-to-r from-green-600 to-emerald-600 text-white py-2.5 rounded-xl font-bold shadow-lg hover:shadow-xl transform hover:scale-[1.02] transition-all duration-200 disabled:opacity-50"
+                                className="w-full bg-gradient-to-r from-purple-600 via-indigo-600 to-purple-600 text-white py-2.5 rounded-xl font-bold shadow-lg hover:shadow-xl transform hover:scale-[1.02] transition-all duration-200 disabled:opacity-50"
                               >
                                 {loadingBilling ? 'Processing...' : 'Switch to Yearly'}
                               </button>
                             </div>
                           ) : (
-                            <div className="bg-white rounded-lg p-4 border-2 border-blue-200 shadow-sm">
+                            <div className="bg-white rounded-lg p-4 border-2 border-purple-200 shadow-sm">
                               <div className="flex items-center justify-between mb-3">
                                 <div>
                                   <div className="font-bold text-gray-900">
@@ -1189,8 +1194,8 @@ export default function Settings({
                                     {currentPlan === 'plus' ? '$7.99/month' : '$19.99/month'}
                                   </div>
                                 </div>
-                                <div className="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center">
-                                  <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <div className="w-12 h-12 rounded-full bg-gradient-to-br from-purple-100 to-indigo-100 flex items-center justify-center">
+                                  <svg className="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                                   </svg>
                                 </div>
@@ -1198,7 +1203,7 @@ export default function Settings({
                               <button
                                 onClick={() => handleSwitchBillingPeriod('monthly')}
                                 disabled={loadingBilling}
-                                className="w-full btn-premium py-2.5 text-sm font-bold disabled:opacity-50"
+                                className="w-full bg-gradient-to-r from-purple-600 via-indigo-600 to-purple-600 text-white py-2.5 rounded-xl font-bold shadow-lg hover:shadow-xl transform hover:scale-[1.02] transition-all duration-200 disabled:opacity-50"
                               >
                                 {loadingBilling ? 'Processing...' : 'Switch to Monthly'}
                               </button>
@@ -1206,12 +1211,101 @@ export default function Settings({
                           )}
                         </div>
 
-                        <div className="mt-4 bg-blue-50 border border-blue-200 rounded-lg p-3">
-                          <p className="text-xs text-blue-800">
+                        <div className="mt-4 bg-purple-50 border border-purple-200 rounded-lg p-3">
+                          <p className="text-xs text-purple-800">
                             <strong>Note:</strong> Switching billing periods updates your existing subscription immediately. You'll be charged a prorated amount for the difference, and your billing cycle will be adjusted accordingly.
                           </p>
                         </div>
                       </div>
+
+                      {/* Downgrade to AutoIQ+ Section - Only show for Pro+ users */}
+                      {currentPlan === 'pro_plus' && (
+                        <div className="bg-gradient-to-br from-purple-50 to-indigo-50 border-2 border-purple-300 rounded-xl p-6 shadow-lg">
+                          <div className="flex items-center gap-3 mb-4">
+                            <div className="w-12 h-12 bg-gradient-to-br from-purple-600 to-indigo-600 rounded-xl flex items-center justify-center shadow-lg">
+                              <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                              </svg>
+                            </div>
+                            <div>
+                              <h4 className="text-xl font-bold text-gray-900 mb-1">Downgrade to AutoIQ+</h4>
+                              <p className="text-sm text-gray-600">Switch to AutoIQ+ plan (monthly or yearly)</p>
+                            </div>
+                          </div>
+                          
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            {/* AutoIQ+ Monthly */}
+                            <div className="bg-white rounded-xl p-5 border-2 border-purple-200 shadow-md hover:shadow-lg transition-shadow">
+                              <div className="flex items-center justify-between mb-4">
+                                <div>
+                                  <div className="font-bold text-lg text-gray-900">AutoIQ+ Monthly</div>
+                                  <div className="text-2xl font-bold text-purple-600 mt-1">$7.99<span className="text-sm font-normal text-gray-600">/month</span></div>
+                                  <div className="text-xs text-gray-500 mt-1">Best for: Daily drivers & car lovers</div>
+                                </div>
+                                <div className="w-14 h-14 rounded-full bg-gradient-to-br from-purple-100 to-indigo-100 flex items-center justify-center">
+                                  <svg className="w-7 h-7 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                  </svg>
+                                </div>
+                              </div>
+                              <button
+                                onClick={() => handleUpgradeSubscription('plus', 'monthly')}
+                                disabled={loadingBilling}
+                                className="w-full bg-gradient-to-r from-purple-600 via-indigo-600 to-purple-600 text-white py-3 rounded-xl font-bold shadow-lg hover:shadow-xl transform hover:scale-[1.02] transition-all duration-200 disabled:opacity-50 disabled:transform-none"
+                              >
+                                {loadingBilling ? (
+                                  <span className="flex items-center justify-center gap-2">
+                                    <svg className="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
+                                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                    </svg>
+                                    Processing...
+                                  </span>
+                                ) : (
+                                  'Downgrade to AutoIQ+ Monthly'
+                                )}
+                              </button>
+                            </div>
+
+                            {/* AutoIQ+ Yearly */}
+                            <div className="bg-white rounded-xl p-5 border-2 border-purple-200 shadow-md hover:shadow-lg transition-shadow relative overflow-hidden">
+                              <div className="absolute top-3 right-3">
+                                <span className="bg-gradient-to-r from-purple-500 to-indigo-500 text-white text-xs font-bold px-3 py-1 rounded-full shadow-md">Save</span>
+                              </div>
+                              <div className="flex items-center justify-between mb-4">
+                                <div>
+                                  <div className="font-bold text-lg text-gray-900">AutoIQ+ Yearly</div>
+                                  <div className="text-2xl font-bold text-purple-600 mt-1">$79<span className="text-sm font-normal text-gray-600">/year</span></div>
+                                  <div className="text-xs text-purple-600 font-semibold mt-1">Save $16.88/year</div>
+                                  <div className="text-xs text-gray-500 mt-1">Best for: Daily drivers & car lovers</div>
+                                </div>
+                                <div className="w-14 h-14 rounded-full bg-gradient-to-br from-purple-100 to-indigo-100 flex items-center justify-center">
+                                  <svg className="w-7 h-7 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                  </svg>
+                                </div>
+                              </div>
+                              <button
+                                onClick={() => handleUpgradeSubscription('plus', 'yearly')}
+                                disabled={loadingBilling}
+                                className="w-full bg-gradient-to-r from-purple-600 via-indigo-600 to-purple-600 text-white py-3 rounded-xl font-bold shadow-lg hover:shadow-xl transform hover:scale-[1.02] transition-all duration-200 disabled:opacity-50 disabled:transform-none"
+                              >
+                                {loadingBilling ? (
+                                  <span className="flex items-center justify-center gap-2">
+                                    <svg className="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
+                                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                    </svg>
+                                    Processing...
+                                  </span>
+                                ) : (
+                                  'Downgrade to AutoIQ+ Yearly'
+                                )}
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      )}
 
                       {/* Upgrade to Pro+ Section - Only show for Plus users */}
                       {currentPlan === 'plus' && (
@@ -1272,7 +1366,7 @@ export default function Settings({
                               <button
                                 onClick={() => handleUpgradeSubscription('pro_plus', 'monthly')}
                                 disabled={loadingBilling}
-                                className="w-full bg-gradient-to-r from-purple-600 to-indigo-600 text-white py-3 rounded-xl font-bold shadow-lg hover:shadow-xl transform hover:scale-[1.02] transition-all duration-200 disabled:opacity-50 disabled:transform-none"
+                                className="w-full bg-gradient-to-r from-purple-600 via-indigo-600 to-purple-600 text-white py-3 rounded-xl font-bold shadow-lg hover:shadow-xl transform hover:scale-[1.02] transition-all duration-200 disabled:opacity-50 disabled:transform-none"
                               >
                                 {loadingBilling ? (
                                   <span className="flex items-center justify-center gap-2">
@@ -1335,7 +1429,7 @@ export default function Settings({
                               <button
                                 onClick={() => handleUpgradeSubscription('pro_plus', 'yearly')}
                                 disabled={loadingBilling}
-                                className="w-full bg-gradient-to-r from-green-600 to-emerald-600 text-white py-3 rounded-xl font-bold shadow-lg hover:shadow-xl transform hover:scale-[1.02] transition-all duration-200 disabled:opacity-50 disabled:transform-none"
+                                className="w-full bg-gradient-to-r from-purple-600 via-indigo-600 to-purple-600 text-white py-3 rounded-xl font-bold shadow-lg hover:shadow-xl transform hover:scale-[1.02] transition-all duration-200 disabled:opacity-50 disabled:transform-none"
                               >
                                 {loadingBilling ? (
                                   <span className="flex items-center justify-center gap-2">
@@ -1357,67 +1451,16 @@ export default function Settings({
                     );
                   })()}
 
-                  {/* Show message for Pro+ users that they're at the highest tier */}
-                  {subscriptionStatus?.has_subscription && plan === 'pro_plus' && subscriptionStatus?.current_plan === 'pro_plus' && (
-                    <div className="bg-gradient-to-br from-indigo-50 to-purple-50 border-2 border-indigo-200 rounded-xl p-6">
-                      <div className="flex items-center gap-3 mb-3">
-                        <div className="w-12 h-12 bg-gradient-to-br from-indigo-600 to-purple-600 rounded-xl flex items-center justify-center shadow-lg">
-                          <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
-                          </svg>
-                        </div>
-                        <div>
-                          <h4 className="text-lg font-bold text-gray-900">You're on Pro+</h4>
-                          <p className="text-sm text-gray-600">You have access to all premium features!</p>
-                        </div>
-                      </div>
-                      <div className="bg-white rounded-lg p-4 border border-indigo-200">
-                        <p className="text-sm text-gray-700">
-                          You're currently subscribed to <strong>Pro+</strong>, our highest tier plan. You have access to all features including advanced diagnostics, data export, and priority support.
-                        </p>
-                      </div>
-                    </div>
-                  )}
                 </>
               )}
-              <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+              <div className="bg-gradient-to-br from-purple-50 to-indigo-50 border-2 border-purple-200 rounded-lg p-4">
                 <div className="flex items-start gap-3">
-                  <span className="text-green-600 text-xl">✓</span>
+                  <span className="text-purple-600 text-xl">✓</span>
                   <div>
-                    <div className="font-semibold text-green-900 mb-1">Billing Enabled</div>
-                    <p className="text-sm text-green-800">
+                    <div className="font-semibold text-purple-900 mb-1">Billing Enabled</div>
+                    <p className="text-sm text-purple-800">
                       Real payment processing is active. Subscribe to unlock premium features.
                     </p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Billing Period Toggle */}
-              <div className="mt-6 mb-4">
-                <div className="flex items-center justify-center gap-4 bg-gray-50 rounded-lg p-2 border border-gray-200">
-                  <span className="text-sm font-medium text-gray-700">Billing Period:</span>
-                  <div className="flex gap-2">
-                    <button
-                      onClick={() => setBillingPeriod('monthly')}
-                      className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
-                        billingPeriod === 'monthly'
-                          ? 'bg-primary-600 text-white shadow-md'
-                          : 'bg-white text-gray-700 hover:bg-gray-100'
-                      }`}
-                    >
-                      Monthly
-                    </button>
-                    <button
-                      onClick={() => setBillingPeriod('yearly')}
-                      className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
-                        billingPeriod === 'yearly'
-                          ? 'bg-primary-600 text-white shadow-md'
-                          : 'bg-white text-gray-700 hover:bg-gray-100'
-                      }`}
-                    >
-                      Yearly
-                      <span className="ml-1 text-xs bg-green-100 text-green-700 px-1.5 py-0.5 rounded">Save</span>
-                    </button>
                   </div>
                 </div>
               </div>
@@ -1425,78 +1468,68 @@ export default function Settings({
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6">
                 {/* Only show upgrade buttons if user doesn't have an active subscription */}
                 {!subscriptionStatus?.has_subscription && plan !== 'plus' && plan !== 'pro_plus' && (
-                  <div className="border-2 border-primary-200 rounded-xl p-6 bg-gradient-to-br from-primary-50 to-white">
+                  <div className="border-2 border-purple-200 rounded-xl p-6 bg-gradient-to-br from-purple-50 to-white">
                     <h4 className="text-lg font-bold text-gray-900 mb-2">Upgrade to AutoIQ+</h4>
                     <div className="mb-3">
                       <div className="text-2xl font-bold text-gray-900">
-                        {billingPeriod === 'monthly' ? (
-                          <>$7.99<span className="text-sm font-normal text-gray-600">/month</span></>
-                        ) : (
-                          <>$79<span className="text-sm font-normal text-gray-600">/year</span></>
-                        )}
-                      </div>
-                      <div className="text-sm text-gray-600">
-                        {billingPeriod === 'monthly' ? '$79/year' : '$7.99/month equivalent'}
+                        $7.99<span className="text-sm font-normal text-gray-600">/month</span> or $79<span className="text-sm font-normal text-gray-600">/year</span>
                       </div>
                       <div className="text-xs text-gray-500 mt-1 italic">Best for: Daily drivers & car lovers</div>
                     </div>
                     <p className="text-sm text-gray-600 mb-4">
                       Unlock AI-powered diagnostics, repair recommendations, and cost estimates.
                     </p>
-                    <button
-                      onClick={() => handleUpgrade('plus')}
-                      disabled={loadingBilling}
-                      className="w-full btn-premium px-6 py-3 text-sm font-bold disabled:opacity-50"
-                    >
-                      {loadingBilling ? 'Loading...' : `Subscribe to AutoIQ+ (${billingPeriod === 'monthly' ? 'Monthly' : 'Yearly'})`}
-                    </button>
+                    <div className="grid grid-cols-2 gap-2">
+                      <button
+                        onClick={() => handleUpgrade('plus', 'monthly')}
+                        disabled={loadingBilling}
+                        className="w-full bg-gradient-to-r from-purple-600 via-indigo-600 to-purple-600 text-white px-4 py-3 rounded-lg font-bold shadow-lg hover:shadow-xl transform hover:scale-[1.02] transition-all duration-200 disabled:opacity-50 disabled:transform-none text-sm"
+                      >
+                        {loadingBilling ? 'Loading...' : 'Monthly'}
+                      </button>
+                      <button
+                        onClick={() => handleUpgrade('plus', 'yearly')}
+                        disabled={loadingBilling}
+                        className="w-full bg-gradient-to-r from-purple-600 via-indigo-600 to-purple-600 text-white px-4 py-3 rounded-lg font-bold shadow-lg hover:shadow-xl transform hover:scale-[1.02] transition-all duration-200 disabled:opacity-50 disabled:transform-none text-sm"
+                      >
+                        {loadingBilling ? 'Loading...' : 'Yearly'}
+                      </button>
+                    </div>
                   </div>
                 )}
 
                 {/* Only show upgrade buttons if user doesn't have an active subscription */}
                 {!subscriptionStatus?.has_subscription && plan !== 'pro_plus' && (
-                  <div className="border-2 border-accent-200 rounded-xl p-6 bg-gradient-to-br from-accent-50 to-white">
+                  <div className="border-2 border-purple-200 rounded-xl p-6 bg-gradient-to-br from-purple-50 to-white">
                     <h4 className="text-lg font-bold text-gray-900 mb-2">Upgrade to Pro+</h4>
                     <div className="mb-3">
                       <div className="text-2xl font-bold text-gray-900">
-                        {billingPeriod === 'monthly' ? (
-                          <>$19.99<span className="text-sm font-normal text-gray-600">/month</span></>
-                        ) : (
-                          <>$199<span className="text-sm font-normal text-gray-600">/year</span></>
-                        )}
-                      </div>
-                      <div className="text-sm text-gray-600">
-                        {billingPeriod === 'monthly' ? '$199/year' : '$19.99/month equivalent'}
+                        $19.99<span className="text-sm font-normal text-gray-600">/month</span> or $199<span className="text-sm font-normal text-gray-600">/year</span>
                       </div>
                       <div className="text-xs text-gray-500 mt-1 italic">Best for: Mechanics & shop owners</div>
                     </div>
                     <p className="text-sm text-gray-600 mb-4">
                       Everything in AutoIQ+, plus advanced features, data export, and priority support.
                     </p>
-                    <button
-                      onClick={() => handleUpgrade('pro_plus')}
-                      disabled={loadingBilling}
-                      className="w-full btn-premium px-6 py-3 text-sm font-bold disabled:opacity-50"
-                    >
-                      {loadingBilling ? 'Loading...' : `Subscribe to Pro+ (${billingPeriod === 'monthly' ? 'Monthly' : 'Yearly'})`}
-                    </button>
-                  </div>
-                )}
-
-                {(plan === 'plus' || plan === 'pro_plus') && (
-                  <div className="col-span-full bg-blue-50 border border-blue-200 rounded-lg p-4">
-                    <div className="flex items-start gap-3">
-                      <span className="text-blue-600 text-xl">ℹ️</span>
-                      <div>
-                        <div className="font-semibold text-blue-900 mb-1">Active Subscription</div>
-                        <p className="text-sm text-blue-800">
-                          You are currently on the <strong>{plan === 'plus' ? 'AutoIQ+' : 'Pro+'}</strong> plan.
-                          Subscription management and webhook-based entitlements will be available in a future update.
-                        </p>
-                      </div>
+                    <div className="grid grid-cols-2 gap-2">
+                      <button
+                        onClick={() => handleUpgrade('pro_plus', 'monthly')}
+                        disabled={loadingBilling}
+                        className="w-full bg-gradient-to-r from-purple-600 via-indigo-600 to-purple-600 text-white px-4 py-3 rounded-lg font-bold shadow-lg hover:shadow-xl transform hover:scale-[1.02] transition-all duration-200 disabled:opacity-50 disabled:transform-none text-sm"
+                      >
+                        {loadingBilling ? 'Loading...' : 'Monthly'}
+                      </button>
+                      <button
+                        onClick={() => handleUpgrade('pro_plus', 'yearly')}
+                        disabled={loadingBilling}
+                        className="w-full bg-gradient-to-r from-purple-600 via-indigo-600 to-purple-600 text-white px-4 py-3 rounded-lg font-bold shadow-lg hover:shadow-xl transform hover:scale-[1.02] transition-all duration-200 disabled:opacity-50 disabled:transform-none text-sm"
+                      >
+                        {loadingBilling ? 'Loading...' : 'Yearly'}
+                      </button>
                     </div>
                   </div>
                 )}
+
               </div>
             </div>
           ) : (
