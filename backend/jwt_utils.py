@@ -11,9 +11,41 @@ from typing import Optional, Dict, Any
 logger = logging.getLogger(__name__)
 
 # JWT configuration from environment
-JWT_SECRET = os.getenv("JWT_SECRET", "autoiq-secret-key-change-in-production")
+JWT_SECRET = os.getenv("JWT_SECRET")
 JWT_ALGORITHM = os.getenv("JWT_ALGORITHM", "HS256")
 JWT_EXPIRES_MINUTES = int(os.getenv("JWT_EXPIRES_MINUTES", "60"))  # Default 60 minutes
+
+# CRITICAL SECURITY CHECK: Validate JWT secret
+if not JWT_SECRET:
+    error_msg = (
+        "CRITICAL SECURITY ERROR: JWT_SECRET environment variable is not set!\n"
+        "Generate a secure secret with: python -c 'import secrets; print(secrets.token_urlsafe(32))'\n"
+        "Then set it in your .env file: JWT_SECRET=your_generated_secret"
+    )
+    logger.error(error_msg)
+    raise ValueError(error_msg)
+
+# Check if using the old insecure default
+if JWT_SECRET == "autoiq-secret-key-change-in-production":
+    error_msg = (
+        "CRITICAL SECURITY ERROR: JWT_SECRET is set to the default insecure value!\n"
+        "This is a publicly known secret and compromises all authentication.\n"
+        "Generate a new secure secret with: python -c 'import secrets; print(secrets.token_urlsafe(32))'\n"
+        "Then update your .env file with the new secret."
+    )
+    logger.error(error_msg)
+    raise ValueError(error_msg)
+
+# Validate minimum secret length (at least 32 characters)
+if len(JWT_SECRET) < 32:
+    error_msg = (
+        f"CRITICAL SECURITY ERROR: JWT_SECRET is too short ({len(JWT_SECRET)} chars, minimum 32 required)!\n"
+        "Generate a secure secret with: python -c 'import secrets; print(secrets.token_urlsafe(32))'"
+    )
+    logger.error(error_msg)
+    raise ValueError(error_msg)
+
+logger.info(f"JWT configuration loaded: algorithm={JWT_ALGORITHM}, expires_minutes={JWT_EXPIRES_MINUTES}")
 
 
 def create_access_token(payload: Dict[str, Any], expires_minutes: Optional[int] = None) -> str:

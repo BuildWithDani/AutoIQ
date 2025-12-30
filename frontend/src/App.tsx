@@ -259,8 +259,8 @@ const Header = memo(function Header({
 
   const planColors: Record<Plan, string> = {
     free: 'bg-gradient-to-r from-gray-100 via-gray-50 to-gray-200 text-gray-700 shadow-md',
-    plus: 'bg-gradient-to-r from-gray-700 via-gray-800 to-blue-600 text-white shadow-lg shadow-blue-500/30',
-    pro_plus: 'bg-gradient-to-r from-gray-900 via-blue-600 to-purple-600 text-white shadow-xl shadow-purple-500/40',
+    plus: 'bg-gradient-to-r from-gray-700 via-gray-800 to-gray-700 text-white shadow-lg shadow-gray-500/30',
+    pro_plus: 'bg-gradient-to-r from-gray-800 via-gray-700 to-gray-800 text-white shadow-xl shadow-gray-500/40',
   };
 
   const hasVehicleInfo = vehicleInfo && (vehicleInfo.make || vehicleInfo.model || vehicleInfo.year);
@@ -383,7 +383,7 @@ const Header = memo(function Header({
                       <div className="absolute inset-0 -translate-x-full group-hover:translate-x-full transition-transform duration-1000 ease-in-out bg-gradient-to-r from-transparent via-white/30 to-transparent"></div>
                       {/* Subtle glow effect */}
                       <div className={`absolute -inset-1 rounded-xl blur-sm opacity-0 group-hover:opacity-60 transition-opacity duration-300 ${
-                        plan === 'plus' ? 'bg-blue-500/50' : 'bg-purple-500/50'
+                        plan === 'plus' ? 'bg-gray-500/50' : 'bg-gray-500/50'
                       }`}></div>
                     </>
                   )}

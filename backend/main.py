@@ -11,6 +11,9 @@ from datetime import datetime
 import logging
 from dotenv import load_dotenv
 from typing import Dict, Any
+from slowapi import Limiter, _rate_limit_exceeded_handler
+from slowapi.util import get_remote_address
+from slowapi.errors import RateLimitExceeded
 
 from models import (
     StatusResponse,
@@ -71,13 +74,42 @@ logger = logging.getLogger(__name__)
 
 app = FastAPI(title="AutoIQ Backend", version="0.1.0")
 
-# CORS middleware for Electron
+# Rate limiting configuration
+limiter = Limiter(key_func=get_remote_address)
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+
+# CORS middleware - Secure configuration
+# Load allowed origins from environment or use secure defaults
+ALLOWED_ORIGINS = os.getenv("ALLOWED_ORIGINS", "").split(",") if os.getenv("ALLOWED_ORIGINS") else [
+    "http://localhost:5173",  # Local frontend dev
+    "http://127.0.0.1:5173",  # Local frontend dev (alternate)
+    "http://localhost:8001",  # Local backend
+    "http://127.0.0.1:8001",  # Local backend (alternate)
+    "https://autoiq-production.up.railway.app",  # Production backend
+]
+
+# Filter out empty strings and strip whitespace
+ALLOWED_ORIGINS = [origin.strip() for origin in ALLOWED_ORIGINS if origin.strip()]
+
+# Security check: Never allow "*" with credentials - this is a critical vulnerability
+if "*" in ALLOWED_ORIGINS:
+    logger.error("CRITICAL SECURITY ERROR: Cannot use '*' as allowed origin with credentials enabled!")
+    raise ValueError(
+        "CORS misconfiguration: allow_origins=['*'] with allow_credentials=True is a critical security vulnerability. "
+        "Set ALLOWED_ORIGINS environment variable with specific origins, e.g.: "
+        "ALLOWED_ORIGINS='https://yourdomain.com,http://localhost:5173'"
+    )
+
+logger.info(f"CORS allowed origins: {ALLOWED_ORIGINS}")
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # In production, restrict this
+    allow_origins=ALLOWED_ORIGINS,  # Specific origins only - NEVER use "*" with credentials
     allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],  # Explicit methods
+    allow_headers=["Content-Type", "Authorization"],  # Explicit headers
+    max_age=3600,  # Cache preflight requests for 1 hour
 )
 
 # Initialize OBD service
@@ -95,16 +127,17 @@ async def startup_event():
 # ============================================================================
 
 @app.post("/api/auth/register", response_model=AuthResponse)
-async def register(request: RegisterRequest):
+@limiter.limit("3/minute")  # Max 3 registration attempts per minute per IP
+async def register(request: Request, register_req: RegisterRequest):
     """Register a new user."""
-    if request.password != request.passwordConfirm:
+    if register_req.password != register_req.passwordConfirm:
         raise HTTPException(
             status_code=400,
             detail={"code": "password_mismatch", "message": "Passwords do not match"}
         )
     
     try:
-        token, user_info = await register_user(request.email, request.password)
+        token, user_info = await register_user(register_req.email, register_req.password)
         
         return AuthResponse(
             token=token,
@@ -132,10 +165,11 @@ async def register(request: RegisterRequest):
 
 
 @app.post("/api/auth/login", response_model=AuthResponse)
-async def login(request: LoginRequest):
+@limiter.limit("5/minute")  # Max 5 login attempts per minute per IP
+async def login(request: Request, login_req: LoginRequest):
     """Login user and return JWT token."""
     try:
-        result = await authenticate_user(request.email, request.password)
+        result = await authenticate_user(login_req.email, login_req.password)
         
         if not result:
             raise HTTPException(
@@ -266,8 +300,10 @@ async def update_account_info(
 
 
 @app.post("/api/account/change-password", response_model=ChangePasswordResponse)
+@limiter.limit("3/minute")  # Max 3 password change attempts per minute per IP
 async def change_password(
-    request: ChangePasswordRequest,
+    request: Request,
+    change_pwd_req: ChangePasswordRequest,
     user: Dict[str, Any] = Depends(get_current_user_dependency)
 ):
     """Change user password."""
@@ -278,7 +314,7 @@ async def change_password(
         # First, verify the current password by attempting to authenticate
         from appwrite_client import authenticate_user
         try:
-            authenticate_user(user_email, request.current_password)
+            authenticate_user(user_email, change_pwd_req.current_password)
         except ValueError as e:
             if "password" in str(e).lower() or "incorrect" in str(e).lower():
                 raise HTTPException(
@@ -288,7 +324,7 @@ async def change_password(
             raise
         
         # If authentication succeeded, update the password
-        change_user_password(user_id, request.new_password)
+        change_user_password(user_id, change_pwd_req.new_password)
         
         return ChangePasswordResponse(
             message="Password changed successfully"
