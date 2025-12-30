@@ -772,16 +772,16 @@ export default function Settings({
         </div>
 
         {/* Developer Section - Password Protected */}
-        <div className="bg-gradient-to-br from-purple-50/50 via-indigo-50/50 to-purple-50/50 rounded-2xl shadow-xl border-2 border-purple-200/50 p-8">
+        <div className="bg-gradient-to-br from-gray-50/50 via-gray-50/50 to-gray-50/50 rounded-2xl shadow-xl border-2 border-gray-200/50 p-8">
           <div className="flex items-center justify-between mb-6">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-gradient-to-br from-purple-600 via-indigo-600 to-purple-600 rounded-lg flex items-center justify-center shadow-md">
+              <div className="w-10 h-10 bg-gradient-to-br from-gray-600 to-gray-700 rounded-lg flex items-center justify-center shadow-md">
                 <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                 </svg>
               </div>
-              <h3 className="text-2xl font-bold bg-gradient-to-r from-purple-600 via-indigo-600 to-purple-600 bg-clip-text text-transparent">Developer Tools</h3>
+              <h3 className="text-2xl font-bold text-gray-900">Developer Tools</h3>
             </div>
             {devToolsUnlocked && (
               <button
@@ -857,9 +857,9 @@ export default function Settings({
           ) : (
             <div className="space-y-6">
               {/* AutoIQ Backend (Public SaaS) */}
-              <div className="bg-gradient-to-br from-purple-50 to-indigo-50 rounded-xl border-2 border-purple-200 p-6 shadow-md hover:shadow-lg transition-shadow">
+              <div className="bg-gradient-to-br from-gray-50 to-gray-50 rounded-xl border-2 border-gray-200 p-6 shadow-md hover:shadow-lg transition-shadow">
                 <div className="flex items-center gap-3 mb-4">
-                  <div className="w-12 h-12 bg-gradient-to-br from-purple-600 via-indigo-600 to-purple-600 rounded-xl flex items-center justify-center shadow-lg">
+                  <div className="w-12 h-12 bg-gradient-to-br from-gray-600 to-gray-700 rounded-xl flex items-center justify-center shadow-lg">
                     <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 12h14M5 12a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v4a2 2 0 01-2 2M5 12a2 2 0 00-2 2v4a2 2 0 002 2h14a2 2 0 002-2v-4a2 2 0 00-2-2m-2-4h.01M17 16h.01" />
                     </svg>
@@ -877,7 +877,7 @@ export default function Settings({
                       type="text"
                       value={censorRailwayUrl(typeof window !== 'undefined' && (window as any).electron?.railwayUrl || import.meta.env.VITE_RAILWAY_API_URL || 'https://autoiq-production.up.railway.app')}
                       readOnly
-                      className="w-full px-4 py-3 border-2 border-purple-200 rounded-lg bg-white text-gray-700 font-mono text-sm shadow-inner focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+                      className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg bg-white text-gray-700 font-mono text-sm shadow-inner focus:outline-none focus:ring-2 focus:ring-gray-500 focus:border-gray-500"
                     />
                     <div className="absolute right-3 top-1/2 -translate-y-1/2">
                       <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -886,7 +886,7 @@ export default function Settings({
                     </div>
                   </div>
                 </div>
-                <div className="flex items-center justify-between p-4 bg-white rounded-lg border-2 border-purple-100 shadow-sm">
+                <div className="flex items-center justify-between p-4 bg-white rounded-lg border-2 border-gray-100 shadow-sm">
                   <div className="flex items-center gap-3">
                     {railwayBackendStatus === 'checking' ? (
                       <>
@@ -914,7 +914,7 @@ export default function Settings({
                   <button
                     onClick={checkRailwayBackend}
                     disabled={checkingRailway}
-                    className="px-5 py-2.5 bg-gradient-to-r from-purple-600 via-indigo-600 to-purple-600 text-white rounded-lg hover:from-purple-700 hover:via-indigo-700 hover:to-purple-700 transition-all text-sm font-semibold shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed transform hover:scale-105 disabled:transform-none"
+                    className="px-5 py-2.5 bg-gradient-to-r from-gray-600 to-gray-700 text-white rounded-lg hover:from-gray-700 hover:to-gray-800 transition-all text-sm font-semibold shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed transform hover:scale-105 disabled:transform-none"
                   >
                     {checkingRailway ? (
                       <span className="flex items-center gap-2">
@@ -929,20 +929,20 @@ export default function Settings({
                     )}
                   </button>
                 </div>
-                <div className="mt-4 flex items-start gap-2 p-3 bg-purple-100/50 rounded-lg border border-purple-200">
-                  <svg className="w-5 h-5 text-purple-600 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <div className="mt-4 flex items-start gap-2 p-3 bg-gray-100/50 rounded-lg border border-gray-200">
+                  <svg className="w-5 h-5 text-gray-600 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
-                  <p className="text-xs text-purple-800 font-medium">
+                  <p className="text-xs text-gray-800 font-medium">
                     <strong>Used for:</strong> Authentication, Billing, AI Diagnostics, Account Management
                   </p>
                 </div>
               </div>
 
               {/* Local Backend (OBD) */}
-              <div className="bg-gradient-to-br from-purple-50 to-indigo-50 rounded-xl border-2 border-purple-200 p-6 shadow-md hover:shadow-lg transition-shadow">
+              <div className="bg-gradient-to-br from-gray-50 to-gray-50 rounded-xl border-2 border-gray-200 p-6 shadow-md hover:shadow-lg transition-shadow">
                 <div className="flex items-center gap-3 mb-4">
-                  <div className="w-12 h-12 bg-gradient-to-br from-purple-600 via-indigo-600 to-purple-600 rounded-xl flex items-center justify-center shadow-lg">
+                  <div className="w-12 h-12 bg-gradient-to-br from-gray-600 to-gray-700 rounded-xl flex items-center justify-center shadow-lg">
                     <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m-2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z" />
                     </svg>
@@ -959,10 +959,10 @@ export default function Settings({
                     type="text"
                     value={typeof window !== 'undefined' && (window as any).electron?.localUrl || import.meta.env.VITE_API_URL || 'http://127.0.0.1:8001'}
                     readOnly
-                    className="w-full px-4 py-3 border-2 border-purple-200 rounded-lg bg-white text-gray-700 font-mono text-sm shadow-inner focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+                    className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg bg-white text-gray-700 font-mono text-sm shadow-inner focus:outline-none focus:ring-2 focus:ring-gray-500 focus:border-gray-500"
                   />
                 </div>
-                <div className="flex items-center justify-between p-4 bg-white rounded-lg border-2 border-purple-100 shadow-sm">
+                <div className="flex items-center justify-between p-4 bg-white rounded-lg border-2 border-gray-100 shadow-sm">
                   <div className="flex items-center gap-3">
                     {localBackendStatus === 'checking' ? (
                       <>
@@ -980,7 +980,7 @@ export default function Settings({
                         </div>
                         <span className="text-gray-700 font-semibold">
                           {status?.connected ? (
-                            <>Connected on <span className="font-mono font-bold text-purple-600">{status.port}</span></>
+                            <>Connected on <span className="font-mono font-bold text-gray-600">{status.port}</span></>
                           ) : (
                             'Connected'
                           )}
@@ -1001,7 +1001,7 @@ export default function Settings({
                       }
                     }}
                     disabled={checkingLocal}
-                    className="px-5 py-2.5 bg-gradient-to-r from-purple-600 via-indigo-600 to-purple-600 text-white rounded-lg hover:from-purple-700 hover:via-indigo-700 hover:to-purple-700 transition-all text-sm font-semibold shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed transform hover:scale-105 disabled:transform-none"
+                    className="px-5 py-2.5 bg-gradient-to-r from-gray-600 to-gray-700 text-white rounded-lg hover:from-gray-700 hover:to-gray-800 transition-all text-sm font-semibold shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed transform hover:scale-105 disabled:transform-none"
                   >
                     {checkingLocal ? (
                       <span className="flex items-center gap-2">
@@ -1016,11 +1016,11 @@ export default function Settings({
                     )}
                   </button>
                 </div>
-                <div className="mt-4 flex items-start gap-2 p-3 bg-purple-100/50 rounded-lg border border-purple-200">
-                  <svg className="w-5 h-5 text-purple-600 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <div className="mt-4 flex items-start gap-2 p-3 bg-gray-100/50 rounded-lg border border-gray-200">
+                  <svg className="w-5 h-5 text-gray-600 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
-                  <p className="text-xs text-purple-800 font-medium">
+                  <p className="text-xs text-gray-800 font-medium">
                     <strong>Used for:</strong> OBD Device Connection, Live Data, Trouble Codes, Vehicle Info
                   </p>
                 </div>
@@ -1030,34 +1030,34 @@ export default function Settings({
         </div>
 
         {/* Account & Billing */}
-        <div className="bg-gradient-to-br from-white via-purple-50/30 to-indigo-50/30 rounded-xl shadow-lg border-2 border-purple-200/50 p-6">
-          <h3 className="text-xl font-bold bg-gradient-to-r from-purple-600 via-indigo-600 to-purple-600 bg-clip-text text-transparent mb-4">Account & Billing</h3>
+        <div className="bg-gradient-to-br from-white via-gray-50/30 to-gray-50/30 rounded-xl shadow-lg border-2 border-gray-200/50 p-6">
+          <h3 className="text-xl font-bold text-gray-900 mb-4">Account & Billing</h3>
           
           {billingConfig?.billing_enabled ? (
             <div className="space-y-4">
               {(subscriptionStatus?.has_subscription || plan === 'plus' || plan === 'pro_plus') && (
                 <>
                   {/* Current Subscription Display */}
-                  <div className="bg-gradient-to-br from-purple-50 via-indigo-50 to-purple-50 border-2 border-purple-300 rounded-xl p-6 shadow-md">
+                  <div className="bg-gradient-to-br from-gray-50 via-gray-50 to-gray-50 border-2 border-gray-300 rounded-xl p-6 shadow-md">
                     <div className="flex items-center justify-between mb-4">
                       <div className="flex items-center gap-3">
-                        <div className="w-12 h-12 bg-gradient-to-br from-purple-600 via-indigo-600 to-purple-600 rounded-xl flex items-center justify-center shadow-lg">
+                        <div className="w-12 h-12 bg-gradient-to-br from-gray-600 to-gray-700 rounded-xl flex items-center justify-center shadow-lg">
                           <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                           </svg>
                         </div>
                         <div>
-                          <div className="font-bold text-lg text-purple-900 mb-1">Current Subscription</div>
-                          <div className="text-sm text-purple-700">
+                          <div className="font-bold text-lg text-gray-900 mb-1">Current Subscription</div>
+                          <div className="text-sm text-gray-700">
                             {subscriptionStatus?.current_plan && subscriptionStatus?.current_billing_period ? (
                               <>
-                                <span className="text-xl font-bold text-purple-900">
+                                <span className="text-xl font-bold text-gray-900">
                                   {subscriptionStatus.current_plan === 'plus' ? 'AutoIQ+' : 'Pro+'} 
                                   {' '}
                                   {subscriptionStatus.current_billing_period === 'monthly' ? 'Monthly' : 'Yearly'}
                                 </span>
                                 {subscriptionStatus.current_plan === 'plus' && subscriptionStatus.current_billing_period === 'monthly' && (
-                                  <span className="ml-2 text-xs bg-purple-100 text-purple-700 px-2 py-1 rounded-full font-semibold">Active</span>
+                                  <span className="ml-2 text-xs bg-gray-100 text-gray-700 px-2 py-1 rounded-full font-semibold">Active</span>
                                 )}
                               </>
                             ) : (
@@ -1067,7 +1067,7 @@ export default function Settings({
                             )}
                           </div>
                           {subscriptionStatus?.subscription_id && (
-                            <div className="mt-2 text-xs text-purple-600 font-mono">
+                            <div className="mt-2 text-xs text-gray-600 font-mono">
                               ID: {subscriptionStatus.subscription_id.substring(0, 20)}...
                             </div>
                           )}
@@ -1076,7 +1076,7 @@ export default function Settings({
                       <button
                         onClick={handleManageSubscription}
                         disabled={loadingBilling || !subscriptionStatus?.has_subscription}
-                        className="px-6 py-3 bg-gradient-to-r from-purple-600 via-indigo-600 to-purple-600 text-white rounded-lg font-semibold hover:from-purple-700 hover:via-indigo-700 hover:to-purple-700 transition-all shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap transform hover:scale-105 disabled:transform-none"
+                        className="px-6 py-3 bg-gradient-to-r from-gray-600 to-gray-700 text-white rounded-lg font-semibold hover:from-gray-700 hover:to-gray-800 transition-all shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap transform hover:scale-105 disabled:transform-none"
                       >
                         {loadingBilling ? (
                           <span className="flex items-center gap-2">
@@ -1112,11 +1112,11 @@ export default function Settings({
                     return (
                     <div className="space-y-6">
                       {/* Switch Billing Period Section */}
-                      <div className="bg-gradient-to-br from-purple-50 to-indigo-50 border-2 border-purple-200 rounded-xl p-6">
+                      <div className="bg-gradient-to-br from-gray-50 to-gray-50 border-2 border-gray-200 rounded-xl p-6">
                         <div className="flex items-center justify-between mb-4">
                           <div>
-                            <h4 className="text-lg font-bold text-purple-900 mb-1">Switch Billing Period</h4>
-                            <p className="text-sm text-purple-700">
+                            <h4 className="text-lg font-bold text-gray-900 mb-1">Switch Billing Period</h4>
+                            <p className="text-sm text-gray-700">
                               Change from <strong>{currentBillingPeriod === 'monthly' ? 'Monthly' : 'Yearly'}</strong> to {currentBillingPeriod === 'monthly' ? 'Yearly' : 'Monthly'} billing
                             </p>
                           </div>
@@ -1124,9 +1124,9 @@ export default function Settings({
                         
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                           {/* Current Plan - Show as reference */}
-                          <div className="bg-white rounded-lg p-4 border-2 border-purple-300 shadow-sm relative">
+                          <div className="bg-white rounded-lg p-4 border-2 border-gray-300 shadow-sm relative">
                             <div className="absolute top-2 right-2">
-                              <span className="bg-gradient-to-r from-purple-500 to-indigo-500 text-white text-xs font-bold px-2 py-1 rounded-full">Current</span>
+                              <span className="bg-gray-600 text-white text-xs font-bold px-2 py-1 rounded-full">Current</span>
                             </div>
                             <div className="flex items-center justify-between mb-3">
                               <div>
@@ -1142,8 +1142,8 @@ export default function Settings({
                                   }
                                 </div>
                               </div>
-                              <div className="w-12 h-12 rounded-full bg-gradient-to-br from-purple-100 to-indigo-100 flex items-center justify-center">
-                                <svg className="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <div className="w-12 h-12 rounded-full bg-gray-100 flex items-center justify-center">
+                                <svg className="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                                 </svg>
                               </div>
@@ -1153,9 +1153,9 @@ export default function Settings({
 
                           {/* Switch Option */}
                           {currentBillingPeriod === 'monthly' ? (
-                            <div className="bg-white rounded-lg p-4 border-2 border-purple-200 relative overflow-hidden shadow-sm">
+                            <div className="bg-white rounded-lg p-4 border-2 border-gray-200 relative overflow-hidden shadow-sm">
                               <div className="absolute top-2 right-2">
-                                <span className="bg-gradient-to-r from-purple-500 to-indigo-500 text-white text-xs font-bold px-2 py-1 rounded-full">Save</span>
+                                <span className="bg-gray-600 text-white text-xs font-bold px-2 py-1 rounded-full">Save</span>
                               </div>
                               <div className="flex items-center justify-between mb-3">
                                 <div>
@@ -1165,12 +1165,12 @@ export default function Settings({
                                   <div className="text-sm text-gray-600 mt-1">
                                     {currentPlan === 'plus' ? '$79/year' : '$199/year'}
                                   </div>
-                                  <div className="text-xs text-purple-600 font-semibold mt-1">
+                                  <div className="text-xs text-gray-600 font-semibold mt-1">
                                     {currentPlan === 'plus' ? 'Save $16.88/year' : 'Save $40.88/year'}
                                   </div>
                                 </div>
-                                <div className="w-12 h-12 rounded-full bg-gradient-to-br from-purple-100 to-indigo-100 flex items-center justify-center">
-                                  <svg className="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <div className="w-12 h-12 rounded-full bg-gray-100 flex items-center justify-center">
+                                  <svg className="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                                   </svg>
                                 </div>
@@ -1178,13 +1178,13 @@ export default function Settings({
                               <button
                                 onClick={() => handleSwitchBillingPeriod('yearly')}
                                 disabled={loadingBilling}
-                                className="w-full bg-gradient-to-r from-purple-600 via-indigo-600 to-purple-600 text-white py-2.5 rounded-xl font-bold shadow-lg hover:shadow-xl transform hover:scale-[1.02] transition-all duration-200 disabled:opacity-50"
+                                className="w-full bg-gradient-to-r from-gray-600 to-gray-700 text-white py-2.5 rounded-xl font-bold shadow-lg hover:shadow-xl transform hover:scale-[1.02] transition-all duration-200 disabled:opacity-50"
                               >
                                 {loadingBilling ? 'Processing...' : 'Switch to Yearly'}
                               </button>
                             </div>
                           ) : (
-                            <div className="bg-white rounded-lg p-4 border-2 border-purple-200 shadow-sm">
+                            <div className="bg-white rounded-lg p-4 border-2 border-gray-200 shadow-sm">
                               <div className="flex items-center justify-between mb-3">
                                 <div>
                                   <div className="font-bold text-gray-900">
@@ -1194,8 +1194,8 @@ export default function Settings({
                                     {currentPlan === 'plus' ? '$7.99/month' : '$19.99/month'}
                                   </div>
                                 </div>
-                                <div className="w-12 h-12 rounded-full bg-gradient-to-br from-purple-100 to-indigo-100 flex items-center justify-center">
-                                  <svg className="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <div className="w-12 h-12 rounded-full bg-gray-100 flex items-center justify-center">
+                                  <svg className="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                                   </svg>
                                 </div>
@@ -1203,7 +1203,7 @@ export default function Settings({
                               <button
                                 onClick={() => handleSwitchBillingPeriod('monthly')}
                                 disabled={loadingBilling}
-                                className="w-full bg-gradient-to-r from-purple-600 via-indigo-600 to-purple-600 text-white py-2.5 rounded-xl font-bold shadow-lg hover:shadow-xl transform hover:scale-[1.02] transition-all duration-200 disabled:opacity-50"
+                                className="w-full bg-gradient-to-r from-gray-600 to-gray-700 text-white py-2.5 rounded-xl font-bold shadow-lg hover:shadow-xl transform hover:scale-[1.02] transition-all duration-200 disabled:opacity-50"
                               >
                                 {loadingBilling ? 'Processing...' : 'Switch to Monthly'}
                               </button>
@@ -1211,8 +1211,8 @@ export default function Settings({
                           )}
                         </div>
 
-                        <div className="mt-4 bg-purple-50 border border-purple-200 rounded-lg p-3">
-                          <p className="text-xs text-purple-800">
+                        <div className="mt-4 bg-gray-50 border border-gray-200 rounded-lg p-3">
+                          <p className="text-xs text-gray-800">
                             <strong>Note:</strong> Switching billing periods updates your existing subscription immediately. You'll be charged a prorated amount for the difference, and your billing cycle will be adjusted accordingly.
                           </p>
                         </div>
@@ -1220,9 +1220,9 @@ export default function Settings({
 
                       {/* Downgrade to AutoIQ+ Section - Only show for Pro+ users */}
                       {currentPlan === 'pro_plus' && (
-                        <div className="bg-gradient-to-br from-purple-50 to-indigo-50 border-2 border-purple-300 rounded-xl p-6 shadow-lg">
+                        <div className="bg-gradient-to-br from-gray-50 to-gray-50 border-2 border-gray-300 rounded-xl p-6 shadow-lg">
                           <div className="flex items-center gap-3 mb-4">
-                            <div className="w-12 h-12 bg-gradient-to-br from-purple-600 to-indigo-600 rounded-xl flex items-center justify-center shadow-lg">
+                            <div className="w-12 h-12 bg-gradient-to-br from-gray-600 to-gray-700 rounded-xl flex items-center justify-center shadow-lg">
                               <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                               </svg>
@@ -1235,15 +1235,15 @@ export default function Settings({
                           
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             {/* AutoIQ+ Monthly */}
-                            <div className="bg-white rounded-xl p-5 border-2 border-purple-200 shadow-md hover:shadow-lg transition-shadow">
+                            <div className="bg-white rounded-xl p-5 border-2 border-gray-200 shadow-md hover:shadow-lg transition-shadow">
                               <div className="flex items-center justify-between mb-4">
                                 <div>
                                   <div className="font-bold text-lg text-gray-900">AutoIQ+ Monthly</div>
-                                  <div className="text-2xl font-bold text-purple-600 mt-1">$7.99<span className="text-sm font-normal text-gray-600">/month</span></div>
+                                  <div className="text-2xl font-bold text-gray-700 mt-1">$7.99<span className="text-sm font-normal text-gray-600">/month</span></div>
                                   <div className="text-xs text-gray-500 mt-1">Best for: Daily drivers & car lovers</div>
                                 </div>
-                                <div className="w-14 h-14 rounded-full bg-gradient-to-br from-purple-100 to-indigo-100 flex items-center justify-center">
-                                  <svg className="w-7 h-7 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <div className="w-14 h-14 rounded-full bg-gray-100 flex items-center justify-center">
+                                  <svg className="w-7 h-7 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                                   </svg>
                                 </div>
@@ -1251,7 +1251,7 @@ export default function Settings({
                               <button
                                 onClick={() => handleUpgradeSubscription('plus', 'monthly')}
                                 disabled={loadingBilling}
-                                className="w-full bg-gradient-to-r from-purple-600 via-indigo-600 to-purple-600 text-white py-3 rounded-xl font-bold shadow-lg hover:shadow-xl transform hover:scale-[1.02] transition-all duration-200 disabled:opacity-50 disabled:transform-none"
+                                className="w-full bg-gradient-to-r from-gray-600 to-gray-700 text-white py-3 rounded-xl font-bold shadow-lg hover:shadow-xl transform hover:scale-[1.02] transition-all duration-200 disabled:opacity-50 disabled:transform-none"
                               >
                                 {loadingBilling ? (
                                   <span className="flex items-center justify-center gap-2">
@@ -1268,19 +1268,19 @@ export default function Settings({
                             </div>
 
                             {/* AutoIQ+ Yearly */}
-                            <div className="bg-white rounded-xl p-5 border-2 border-purple-200 shadow-md hover:shadow-lg transition-shadow relative overflow-hidden">
+                            <div className="bg-white rounded-xl p-5 border-2 border-gray-200 shadow-md hover:shadow-lg transition-shadow relative overflow-hidden">
                               <div className="absolute top-3 right-3">
-                                <span className="bg-gradient-to-r from-purple-500 to-indigo-500 text-white text-xs font-bold px-3 py-1 rounded-full shadow-md">Save</span>
+                                <span className="bg-gray-600 text-white text-xs font-bold px-3 py-1 rounded-full shadow-md">Save</span>
                               </div>
                               <div className="flex items-center justify-between mb-4">
                                 <div>
                                   <div className="font-bold text-lg text-gray-900">AutoIQ+ Yearly</div>
-                                  <div className="text-2xl font-bold text-purple-600 mt-1">$79<span className="text-sm font-normal text-gray-600">/year</span></div>
-                                  <div className="text-xs text-purple-600 font-semibold mt-1">Save $16.88/year</div>
+                                  <div className="text-2xl font-bold text-gray-700 mt-1">$79<span className="text-sm font-normal text-gray-600">/year</span></div>
+                                  <div className="text-xs text-gray-600 font-semibold mt-1">Save $16.88/year</div>
                                   <div className="text-xs text-gray-500 mt-1">Best for: Daily drivers & car lovers</div>
                                 </div>
-                                <div className="w-14 h-14 rounded-full bg-gradient-to-br from-purple-100 to-indigo-100 flex items-center justify-center">
-                                  <svg className="w-7 h-7 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <div className="w-14 h-14 rounded-full bg-gray-100 flex items-center justify-center">
+                                  <svg className="w-7 h-7 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                                   </svg>
                                 </div>
@@ -1288,7 +1288,7 @@ export default function Settings({
                               <button
                                 onClick={() => handleUpgradeSubscription('plus', 'yearly')}
                                 disabled={loadingBilling}
-                                className="w-full bg-gradient-to-r from-purple-600 via-indigo-600 to-purple-600 text-white py-3 rounded-xl font-bold shadow-lg hover:shadow-xl transform hover:scale-[1.02] transition-all duration-200 disabled:opacity-50 disabled:transform-none"
+                                className="w-full bg-gradient-to-r from-gray-600 to-gray-700 text-white py-3 rounded-xl font-bold shadow-lg hover:shadow-xl transform hover:scale-[1.02] transition-all duration-200 disabled:opacity-50 disabled:transform-none"
                               >
                                 {loadingBilling ? (
                                   <span className="flex items-center justify-center gap-2">
@@ -1309,9 +1309,9 @@ export default function Settings({
 
                       {/* Upgrade to Pro+ Section - Only show for Plus users */}
                       {currentPlan === 'plus' && (
-                        <div className="bg-gradient-to-br from-purple-50 to-indigo-50 border-2 border-purple-300 rounded-xl p-6 shadow-lg">
+                        <div className="bg-gradient-to-br from-gray-50 to-gray-50 border-2 border-gray-300 rounded-xl p-6 shadow-lg">
                           <div className="flex items-center gap-3 mb-4">
-                            <div className="w-12 h-12 bg-gradient-to-br from-purple-600 to-indigo-600 rounded-xl flex items-center justify-center shadow-lg">
+                            <div className="w-12 h-12 bg-gradient-to-br from-gray-600 to-gray-700 rounded-xl flex items-center justify-center shadow-lg">
                               <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
                               </svg>
@@ -1324,15 +1324,15 @@ export default function Settings({
                           
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             {/* Pro+ Monthly */}
-                            <div className="bg-white rounded-xl p-5 border-2 border-purple-200 shadow-md hover:shadow-lg transition-shadow">
+                            <div className="bg-white rounded-xl p-5 border-2 border-gray-200 shadow-md hover:shadow-lg transition-shadow">
                               <div className="flex items-center justify-between mb-4">
                                 <div>
                                   <div className="font-bold text-lg text-gray-900">Pro+ Monthly</div>
-                                  <div className="text-2xl font-bold text-purple-600 mt-1">$19.99<span className="text-sm font-normal text-gray-600">/month</span></div>
+                                  <div className="text-2xl font-bold text-gray-700 mt-1">$19.99<span className="text-sm font-normal text-gray-600">/month</span></div>
                                   <div className="text-xs text-gray-500 mt-1">Best for: Mechanics & shop owners</div>
                                 </div>
-                                <div className="w-14 h-14 rounded-full bg-gradient-to-br from-purple-100 to-indigo-100 flex items-center justify-center">
-                                  <svg className="w-7 h-7 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <div className="w-14 h-14 rounded-full bg-gray-100 flex items-center justify-center">
+                                  <svg className="w-7 h-7 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
                                   </svg>
                                 </div>
@@ -1366,7 +1366,7 @@ export default function Settings({
                               <button
                                 onClick={() => handleUpgradeSubscription('pro_plus', 'monthly')}
                                 disabled={loadingBilling}
-                                className="w-full bg-gradient-to-r from-purple-600 via-indigo-600 to-purple-600 text-white py-3 rounded-xl font-bold shadow-lg hover:shadow-xl transform hover:scale-[1.02] transition-all duration-200 disabled:opacity-50 disabled:transform-none"
+                                className="w-full bg-gradient-to-r from-gray-600 to-gray-700 text-white py-3 rounded-xl font-bold shadow-lg hover:shadow-xl transform hover:scale-[1.02] transition-all duration-200 disabled:opacity-50 disabled:transform-none"
                               >
                                 {loadingBilling ? (
                                   <span className="flex items-center justify-center gap-2">
@@ -1429,7 +1429,7 @@ export default function Settings({
                               <button
                                 onClick={() => handleUpgradeSubscription('pro_plus', 'yearly')}
                                 disabled={loadingBilling}
-                                className="w-full bg-gradient-to-r from-purple-600 via-indigo-600 to-purple-600 text-white py-3 rounded-xl font-bold shadow-lg hover:shadow-xl transform hover:scale-[1.02] transition-all duration-200 disabled:opacity-50 disabled:transform-none"
+                                className="w-full bg-gradient-to-r from-gray-600 to-gray-700 text-white py-3 rounded-xl font-bold shadow-lg hover:shadow-xl transform hover:scale-[1.02] transition-all duration-200 disabled:opacity-50 disabled:transform-none"
                               >
                                 {loadingBilling ? (
                                   <span className="flex items-center justify-center gap-2">
@@ -1453,12 +1453,12 @@ export default function Settings({
 
                 </>
               )}
-              <div className="bg-gradient-to-br from-purple-50 to-indigo-50 border-2 border-purple-200 rounded-lg p-4">
+              <div className="bg-gradient-to-br from-gray-50 to-gray-50 border-2 border-gray-200 rounded-lg p-4">
                 <div className="flex items-start gap-3">
-                  <span className="text-purple-600 text-xl">✓</span>
+                  <span className="text-gray-600 text-xl">✓</span>
                   <div>
-                    <div className="font-semibold text-purple-900 mb-1">Billing Enabled</div>
-                    <p className="text-sm text-purple-800">
+                    <div className="font-semibold text-gray-900 mb-1">Billing Enabled</div>
+                    <p className="text-sm text-gray-800">
                       Real payment processing is active. Subscribe to unlock premium features.
                     </p>
                   </div>
@@ -1468,7 +1468,7 @@ export default function Settings({
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6">
                 {/* Only show upgrade buttons if user doesn't have an active subscription */}
                 {!subscriptionStatus?.has_subscription && plan !== 'plus' && plan !== 'pro_plus' && (
-                  <div className="border-2 border-purple-200 rounded-xl p-6 bg-gradient-to-br from-purple-50 to-white">
+                  <div className="border-2 border-gray-200 rounded-xl p-6 bg-gradient-to-br from-gray-50 to-white">
                     <h4 className="text-lg font-bold text-gray-900 mb-2">Upgrade to AutoIQ+</h4>
                     <div className="mb-3">
                       <div className="text-2xl font-bold text-gray-900">
@@ -1483,14 +1483,14 @@ export default function Settings({
                       <button
                         onClick={() => handleUpgrade('plus', 'monthly')}
                         disabled={loadingBilling}
-                        className="w-full bg-gradient-to-r from-purple-600 via-indigo-600 to-purple-600 text-white px-4 py-3 rounded-lg font-bold shadow-lg hover:shadow-xl transform hover:scale-[1.02] transition-all duration-200 disabled:opacity-50 disabled:transform-none text-sm"
+                        className="w-full bg-gradient-to-r from-gray-600 to-gray-700 text-white px-4 py-3 rounded-lg font-bold shadow-lg hover:shadow-xl transform hover:scale-[1.02] transition-all duration-200 disabled:opacity-50 disabled:transform-none text-sm"
                       >
                         {loadingBilling ? 'Loading...' : 'Monthly'}
                       </button>
                       <button
                         onClick={() => handleUpgrade('plus', 'yearly')}
                         disabled={loadingBilling}
-                        className="w-full bg-gradient-to-r from-purple-600 via-indigo-600 to-purple-600 text-white px-4 py-3 rounded-lg font-bold shadow-lg hover:shadow-xl transform hover:scale-[1.02] transition-all duration-200 disabled:opacity-50 disabled:transform-none text-sm"
+                        className="w-full bg-gradient-to-r from-gray-600 to-gray-700 text-white px-4 py-3 rounded-lg font-bold shadow-lg hover:shadow-xl transform hover:scale-[1.02] transition-all duration-200 disabled:opacity-50 disabled:transform-none text-sm"
                       >
                         {loadingBilling ? 'Loading...' : 'Yearly'}
                       </button>
@@ -1500,7 +1500,7 @@ export default function Settings({
 
                 {/* Only show upgrade buttons if user doesn't have an active subscription */}
                 {!subscriptionStatus?.has_subscription && plan !== 'pro_plus' && (
-                  <div className="border-2 border-purple-200 rounded-xl p-6 bg-gradient-to-br from-purple-50 to-white">
+                  <div className="border-2 border-gray-200 rounded-xl p-6 bg-gradient-to-br from-gray-50 to-white">
                     <h4 className="text-lg font-bold text-gray-900 mb-2">Upgrade to Pro+</h4>
                     <div className="mb-3">
                       <div className="text-2xl font-bold text-gray-900">
@@ -1515,14 +1515,14 @@ export default function Settings({
                       <button
                         onClick={() => handleUpgrade('pro_plus', 'monthly')}
                         disabled={loadingBilling}
-                        className="w-full bg-gradient-to-r from-purple-600 via-indigo-600 to-purple-600 text-white px-4 py-3 rounded-lg font-bold shadow-lg hover:shadow-xl transform hover:scale-[1.02] transition-all duration-200 disabled:opacity-50 disabled:transform-none text-sm"
+                        className="w-full bg-gradient-to-r from-gray-600 to-gray-700 text-white px-4 py-3 rounded-lg font-bold shadow-lg hover:shadow-xl transform hover:scale-[1.02] transition-all duration-200 disabled:opacity-50 disabled:transform-none text-sm"
                       >
                         {loadingBilling ? 'Loading...' : 'Monthly'}
                       </button>
                       <button
                         onClick={() => handleUpgrade('pro_plus', 'yearly')}
                         disabled={loadingBilling}
-                        className="w-full bg-gradient-to-r from-purple-600 via-indigo-600 to-purple-600 text-white px-4 py-3 rounded-lg font-bold shadow-lg hover:shadow-xl transform hover:scale-[1.02] transition-all duration-200 disabled:opacity-50 disabled:transform-none text-sm"
+                        className="w-full bg-gradient-to-r from-gray-600 to-gray-700 text-white px-4 py-3 rounded-lg font-bold shadow-lg hover:shadow-xl transform hover:scale-[1.02] transition-all duration-200 disabled:opacity-50 disabled:transform-none text-sm"
                       >
                         {loadingBilling ? 'Loading...' : 'Yearly'}
                       </button>
