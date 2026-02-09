@@ -10,7 +10,7 @@ from fastapi.responses import Response
 from datetime import datetime
 import logging
 from dotenv import load_dotenv
-from typing import Dict, Any
+from typing import Dict, Any, Optional
 from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
@@ -30,8 +30,10 @@ from models import (
     CheckoutSessionResponse,
     BillingConfigResponse,
     SubscriptionStatusResponse,
+    SubscriptionInfoResponse,
     PortalSessionRequest,
     PortalSessionResponse,
+    PortalUrlResponse,
     SwitchBillingPeriodRequest,
     SwitchBillingPeriodResponse,
     UpgradeSubscriptionRequest,
@@ -561,6 +563,45 @@ async def create_checkout(request: CheckoutSessionRequest, user: Dict[str, Any] 
         )
 
 
+def _get_subscription_info(user: Dict[str, Any]) -> dict:
+    """Build plan, status, currentPeriodEnd for current user (for GET /api/profile and GET /api/subscription)."""
+    plan = user.get("plan") or "free"
+    subscription_id = user.get("stripeSubscriptionId") or user.get("stripe_subscription_id")
+    status = "free"
+    current_period_end = None
+    if subscription_id:
+        try:
+            from billing_service import get_subscription_details
+            sub_details = get_subscription_details(subscription_id)
+            if sub_details:
+                plan = sub_details.get("plan") or plan
+                status = sub_details.get("status") or "active"
+                current_period_end = sub_details.get("current_period_end")
+            else:
+                status = "free"
+        except Exception as e:
+            logger.warning(f"Failed to get subscription details: {e}")
+            if plan in ("plus", "pro_plus"):
+                status = "unknown"
+    return {
+        "plan": plan,
+        "status": status,
+        "currentPeriodEnd": current_period_end,
+    }
+
+
+@app.get("/api/profile", response_model=SubscriptionInfoResponse)
+async def get_profile(user: Dict[str, Any] = Depends(get_current_user_dependency)):
+    """Get current user profile: plan, subscription status, currentPeriodEnd."""
+    return SubscriptionInfoResponse(**_get_subscription_info(user))
+
+
+@app.get("/api/subscription", response_model=SubscriptionInfoResponse)
+async def get_subscription(user: Dict[str, Any] = Depends(get_current_user_dependency)):
+    """Get subscription info: plan, status, currentPeriodEnd."""
+    return SubscriptionInfoResponse(**_get_subscription_info(user))
+
+
 @app.get("/api/billing/subscription-status", response_model=SubscriptionStatusResponse)
 async def get_subscription_status(user: Dict[str, Any] = Depends(get_current_user_dependency)):
     """Get subscription status for current user."""
@@ -668,6 +709,58 @@ async def create_portal(request: PortalSessionRequest, user: Dict[str, Any] = De
                 "message": "An unexpected error occurred while creating portal session."
             }
         )
+
+
+def _create_portal_url(user: Dict[str, Any], return_url: Optional[str] = None) -> str:
+    """Create Stripe Customer Portal session and return portal URL. Raises HTTPException on error."""
+    if not is_billing_configured():
+        raise HTTPException(
+            status_code=503,
+            detail={"code": "billing_unavailable", "message": "Billing is not yet configured. Please contact support."},
+        )
+    customer_id = user.get("stripeCustomerId") or user.get("stripe_customer_id")
+    if not customer_id:
+        user_plan = user.get("plan", "free")
+        if user_plan in ["plus", "pro_plus"]:
+            raise HTTPException(
+                status_code=404,
+                detail={"code": "subscription_syncing", "message": "Your subscription is being processed. Please wait a few moments and try again."},
+            )
+        raise HTTPException(
+            status_code=404,
+            detail={"code": "no_subscription", "message": "No active subscription found. Please subscribe first."},
+        )
+    url = return_url or "https://buildwithdani.com/autoiq/subscription-managed"
+    result = create_portal_session(customer_id, url)
+    return result.get("portal_url", "")
+
+
+@app.post("/api/billing/portal", response_model=PortalUrlResponse)
+async def billing_portal(request: Request, user: Dict[str, Any] = Depends(get_current_user_dependency)):
+    """Create Stripe Customer Portal session; returns { url } for redirect."""
+    return_url = None
+    if request.headers.get("content-type", "").startswith("application/json"):
+        try:
+            body = await request.json()
+            return_url = body.get("return_url") if isinstance(body, dict) else None
+        except Exception:
+            pass
+    url = _create_portal_url(user, return_url)
+    return PortalUrlResponse(url=url)
+
+
+@app.post("/api/stripe/portal", response_model=PortalUrlResponse)
+async def stripe_portal(request: Request, user: Dict[str, Any] = Depends(get_current_user_dependency)):
+    """Create Stripe Customer Portal session; returns { url } for redirect."""
+    return_url = None
+    if request.headers.get("content-type", "").startswith("application/json"):
+        try:
+            body = await request.json()
+            return_url = body.get("return_url") if isinstance(body, dict) else None
+        except Exception:
+            pass
+    url = _create_portal_url(user, return_url)
+    return PortalUrlResponse(url=url)
 
 
 @app.post("/api/billing/upgrade-subscription", response_model=UpgradeSubscriptionResponse)

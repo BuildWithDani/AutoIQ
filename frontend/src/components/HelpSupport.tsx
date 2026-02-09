@@ -90,9 +90,17 @@ export default function HelpSupport() {
         <div className="space-y-4">
           <div>
             <h4 className="font-semibold mb-2">Documentation</h4>
-            <p className="text-sm text-gray-600 dark:text-gray-400">
-              For detailed documentation, please visit our website or check the README file.
+            <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">
+              Installation, adapters, FAQ & changelog — everything you need to get started with AutoIQ.
             </p>
+            <a
+              href="https://docs.buildwithdani.com/autoiq/getting-started"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-accent-600 hover:text-accent-700 underline font-medium"
+            >
+              docs.buildwithdani.com/autoiq — Getting started
+            </a>
           </div>
           <div>
             <h4 className="font-semibold mb-2">Report Issues</h4>

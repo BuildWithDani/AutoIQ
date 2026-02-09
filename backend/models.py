@@ -112,6 +112,18 @@ class PortalSessionResponse(BaseModel):
     portal_url: str
 
 
+class PortalUrlResponse(BaseModel):
+    """Portal URL only (for /api/billing/portal and /api/stripe/portal)."""
+    url: str
+
+
+class SubscriptionInfoResponse(BaseModel):
+    """Plan, status, and current period end (GET /api/profile, GET /api/subscription)."""
+    plan: Literal["free", "plus", "pro_plus"]
+    status: str  # e.g. active, canceled, past_due, trialing; "free" when no subscription
+    currentPeriodEnd: Optional[str] = None  # ISO 8601 end of current billing period, null if free
+
+
 # Auth Models
 class RegisterRequest(BaseModel):
     email: str
