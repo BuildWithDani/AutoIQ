@@ -7,6 +7,7 @@ import logging
 from pathlib import Path
 from typing import Optional, Dict, Any
 from dotenv import load_dotenv
+import httpx
 from appwrite.client import Client
 from appwrite.services.users import Users
 from appwrite.services.account import Account
@@ -209,6 +210,43 @@ def get_user_by_id(user_id: str) -> Optional[Dict[str, Any]]:
         return None
     except Exception as e:
         logger.error(f"Unexpected error getting user: {e}")
+        return None
+
+
+def get_account_from_jwt(jwt: str) -> Optional[Dict[str, Any]]:
+    """
+    Validate an Appwrite JWT by calling the Appwrite Account API.
+    Used when the web app sends Authorization: Bearer <Appwrite JWT> so the backend
+    can treat that user as the current user (e.g. for Stripe portal).
+
+    Args:
+        jwt: JWT string from account.createJWT() (Appwrite session JWT).
+
+    Returns:
+        Appwrite account dict with $id, email, etc., or None if token is invalid.
+    """
+    if not jwt or not jwt.strip():
+        return None
+    endpoint = (APPWRITE_ENDPOINT or "").rstrip("/")
+    project_id = APPWRITE_PROJECT_ID or ""
+    if not endpoint or not project_id:
+        logger.warning("Appwrite endpoint or project ID not set; cannot validate Appwrite JWT")
+        return None
+    url = f"{endpoint}/account"
+    headers = {
+        "X-Appwrite-Project": project_id,
+        "Authorization": f"Bearer {jwt.strip()}",
+        "Content-Type": "application/json",
+    }
+    try:
+        with httpx.Client(timeout=10.0) as client:
+            resp = client.get(url, headers=headers)
+        if resp.status_code != 200:
+            logger.debug(f"Appwrite account JWT validation failed: status={resp.status_code}")
+            return None
+        return resp.json()
+    except Exception as e:
+        logger.debug(f"Appwrite JWT validation error: {e}")
         return None
 
 

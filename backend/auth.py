@@ -11,7 +11,8 @@ from appwrite_client import (
     authenticate_user as appwrite_authenticate_user,
     get_user_by_id,
     get_user_profile,
-    get_or_create_profile
+    get_or_create_profile,
+    get_account_from_jwt,
 )
 
 logger = logging.getLogger(__name__)
@@ -109,12 +110,31 @@ async def authenticate_user(email: str, password: str) -> Optional[Tuple[str, Di
         raise ValueError("Authentication failed. Please try again.")
 
 
+def _build_user_info_from_appwrite_user(user: Dict[str, Any], user_id: str) -> Dict[str, Any]:
+    """Build the standard user_info dict from Appwrite user and profile."""
+    profile = get_user_profile(user_id)
+    if not profile:
+        profile = get_or_create_profile(user_id)
+    return {
+        "id": user_id,
+        "email": user.get("email"),
+        "plan": profile.get("plan", "free") if profile else "free",
+        "stripeCustomerId": profile.get("stripeCustomerId") if profile else None,
+        "stripeSubscriptionId": profile.get("stripeSubscriptionId") if profile else None,
+        "created": user.get("$createdAt"),
+        "updated": user.get("$updatedAt"),
+    }
+
+
 async def get_current_user_from_token(token: str) -> Dict[str, Any]:
     """
     Get current user from JWT token.
+    Accepts either:
+    - Backend-issued JWT (signed with JWT_SECRET, sub=user_id), or
+    - Appwrite JWT (from account.createJWT()) so the web app can call protected endpoints.
     
     Args:
-        token: JWT token string
+        token: JWT token string (backend or Appwrite)
         
     Returns:
         User info dictionary with id, email, plan, etc.
@@ -122,54 +142,43 @@ async def get_current_user_from_token(token: str) -> Dict[str, Any]:
     Raises:
         HTTPException: If token is invalid or user not found
     """
+    # 1) Try backend JWT first (desktop app / login flow)
     try:
-        # Decode token
         payload = decode_access_token(token)
         user_id = payload.get("sub")
-        
         if not user_id:
             raise HTTPException(
                 status_code=401,
                 detail={"code": "unauthorized", "message": "Invalid token payload"}
             )
-        
-        # Fetch user from Appwrite
         user = get_user_by_id(user_id)
         if not user:
             raise HTTPException(
                 status_code=401,
                 detail={"code": "unauthorized", "message": "User not found"}
             )
-        
-        # Fetch profile
-        profile = get_user_profile(user_id)
-        if not profile:
-            # Try to create profile if missing (may return None if database doesn't exist)
-            profile = get_or_create_profile(user_id)
-        
-        # Build user info dict (camelCase for frontend)
-        # Use defaults if profile doesn't exist (database not set up yet)
-        user_info = {
-            "id": user_id,
-            "email": user.get("email"),
-            "plan": profile.get("plan", "free") if profile else "free",
-            "stripeCustomerId": profile.get("stripeCustomerId") if profile else None,
-            "stripeSubscriptionId": profile.get("stripeSubscriptionId") if profile else None,
-            "created": user.get("$createdAt"),
-            "updated": user.get("$updatedAt"),
-        }
-        
-        return user_info
+        return _build_user_info_from_appwrite_user(user, user_id)
     except jwt.ExpiredSignatureError:
         raise HTTPException(
             status_code=401,
             detail={"code": "unauthorized", "message": "Token expired"}
         )
     except jwt.InvalidTokenError:
-        raise HTTPException(
-            status_code=401,
-            detail={"code": "unauthorized", "message": "Invalid token"}
-        )
+        pass  # Not our JWT; try Appwrite JWT below
+    except HTTPException:
+        raise
+
+    # 2) Try Appwrite JWT (web app: Authorization: Bearer <Appwrite JWT>)
+    account = get_account_from_jwt(token)
+    if account:
+        user_id = account.get("$id") or account.get("id")
+        if user_id:
+            return _build_user_info_from_appwrite_user(account, user_id)
+
+    raise HTTPException(
+        status_code=401,
+        detail={"code": "unauthorized", "message": "Invalid token"}
+    )
 
 
 # FastAPI dependency wrapper
