@@ -233,9 +233,10 @@ def get_account_from_jwt(jwt: str) -> Optional[Dict[str, Any]]:
         logger.warning("Appwrite endpoint or project ID not set; cannot validate Appwrite JWT")
         return None
     url = f"{endpoint}/account"
+    # Appwrite REST API expects X-Appwrite-JWT for JWT auth, not Authorization: Bearer
     headers = {
         "X-Appwrite-Project": project_id,
-        "Authorization": f"Bearer {jwt.strip()}",
+        "X-Appwrite-JWT": jwt.strip(),
         "Content-Type": "application/json",
     }
     try:
