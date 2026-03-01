@@ -522,19 +522,20 @@ def get_subscription_details(subscription_id: str) -> Optional[dict]:
             billing_period = 'yearly'
         
         if plan and billing_period:
-            # Include Stripe status and current_period_end (Unix ts -> ISO 8601)
+            # Include Stripe status and dates as YYYY-MM-DD (easy JSON for frontend)
             status = getattr(subscription, 'status', None) or (subscription.get('status') if isinstance(subscription, dict) else None)
-            current_period_end = getattr(subscription, 'current_period_end', None) or (subscription.get('current_period_end') if isinstance(subscription, dict) else None)
-            current_period_end_iso = None
-            if current_period_end is not None:
+            current_period_end_ts = getattr(subscription, 'current_period_end', None) or (subscription.get('current_period_end') if isinstance(subscription, dict) else None)
+            current_period_end_date = None  # YYYY-MM-DD
+            if current_period_end_ts is not None:
                 from datetime import datetime
-                current_period_end_iso = datetime.utcfromtimestamp(current_period_end).isoformat() + 'Z'
+                dt = datetime.utcfromtimestamp(current_period_end_ts)
+                current_period_end_date = dt.strftime('%Y-%m-%d')
             return {
                 'plan': plan,
                 'billing_period': billing_period,
                 'status': status,
-                'current_period_end': current_period_end_iso,
-                'next_bill_date': current_period_end_iso,  # same as period end; when next charge runs
+                'current_period_end': current_period_end_date,
+                'next_bill_date': current_period_end_date,
                 'amount_cents': amount_cents,
                 'currency': currency,
             }

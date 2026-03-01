@@ -121,8 +121,8 @@ class SubscriptionInfoResponse(BaseModel):
     """Plan, status, billing period end, next bill date, and amount (GET /api/profile, GET /api/subscription)."""
     plan: Literal["free", "plus", "pro_plus"]
     status: str  # e.g. active, canceled, past_due, trialing; "free" when no subscription
-    currentPeriodEnd: Optional[str] = None  # ISO 8601 end of current billing period, null if free
-    nextBillDate: Optional[str] = None  # ISO 8601 when next payment runs (same as currentPeriodEnd)
+    currentPeriodEnd: Optional[str] = None  # date only "YYYY-MM-DD" (JSON-friendly), null if free
+    nextBillDate: Optional[str] = None  # date only "YYYY-MM-DD" when next payment runs, null if free
     amountCents: Optional[int] = None  # next charge amount in smallest unit (e.g. cents), null if free
     currency: Optional[str] = None  # e.g. "usd", null if free
 
