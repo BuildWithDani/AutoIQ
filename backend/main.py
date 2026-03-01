@@ -564,11 +564,14 @@ async def create_checkout(request: CheckoutSessionRequest, user: Dict[str, Any] 
 
 
 def _get_subscription_info(user: Dict[str, Any]) -> dict:
-    """Build plan, status, currentPeriodEnd for current user (for GET /api/profile and GET /api/subscription)."""
+    """Build plan, status, currentPeriodEnd, nextBillDate, amountCents, currency for GET /api/profile and GET /api/subscription."""
     plan = user.get("plan") or "free"
     subscription_id = user.get("stripeSubscriptionId") or user.get("stripe_subscription_id")
     status = "free"
     current_period_end = None
+    next_bill_date = None
+    amount_cents = None
+    currency = None
     if subscription_id:
         try:
             from billing_service import get_subscription_details
@@ -577,6 +580,9 @@ def _get_subscription_info(user: Dict[str, Any]) -> dict:
                 plan = sub_details.get("plan") or plan
                 status = sub_details.get("status") or "active"
                 current_period_end = sub_details.get("current_period_end")
+                next_bill_date = sub_details.get("next_bill_date") or current_period_end
+                amount_cents = sub_details.get("amount_cents")
+                currency = sub_details.get("currency")
             else:
                 status = "free"
         except Exception as e:
@@ -587,6 +593,9 @@ def _get_subscription_info(user: Dict[str, Any]) -> dict:
         "plan": plan,
         "status": status,
         "currentPeriodEnd": current_period_end,
+        "nextBillDate": next_bill_date,
+        "amountCents": amount_cents,
+        "currency": currency,
     }
 
 

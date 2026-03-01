@@ -486,14 +486,18 @@ def get_subscription_details(subscription_id: str) -> Optional[dict]:
         if not items:
             return None
         
-        # Get price ID - may need to expand price
+        # Get price ID and price object (for amount/currency)
         price = items[0].price
         if isinstance(price, str):
-            # Price is just an ID, need to retrieve it
             price_obj = stripe.Price.retrieve(price)
             price_id = price_obj.id
         else:
+            price_obj = price
             price_id = price.id
+        
+        # Amount in smallest currency unit (e.g. cents); Stripe uses unit_amount
+        amount_cents = getattr(price_obj, 'unit_amount', None) or (price_obj.get('unit_amount') if isinstance(price_obj, dict) else None)
+        currency = (getattr(price_obj, 'currency', None) or (price_obj.get('currency') if isinstance(price_obj, dict) else None) or 'usd').lower()
         
         # Determine plan and billing period from price ID
         plus_price_id_monthly = get_stripe_price_id('plus', 'monthly')
@@ -530,6 +534,9 @@ def get_subscription_details(subscription_id: str) -> Optional[dict]:
                 'billing_period': billing_period,
                 'status': status,
                 'current_period_end': current_period_end_iso,
+                'next_bill_date': current_period_end_iso,  # same as period end; when next charge runs
+                'amount_cents': amount_cents,
+                'currency': currency,
             }
         
         return None
