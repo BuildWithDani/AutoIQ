@@ -90,7 +90,8 @@ def decode_access_token(token: str) -> Dict[str, Any]:
         logger.warning("Token expired")
         raise
     except jwt.InvalidTokenError as e:
-        logger.warning(f"Invalid token: {e}")
+        # Log at debug; auth layer may fall back to Appwrite JWT (e.g. web app)
+        logger.debug(f"Invalid token (not backend JWT): {e}")
         raise
     except Exception as e:
         logger.error(f"Error decoding token: {e}")

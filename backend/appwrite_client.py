@@ -12,6 +12,7 @@ from appwrite.client import Client
 from appwrite.services.users import Users
 from appwrite.services.account import Account
 from appwrite.services.databases import Databases
+from appwrite.services.tables_db import TablesDB
 from appwrite.exception import AppwriteException
 from appwrite.query import Query
 
@@ -32,6 +33,7 @@ APPWRITE_PROFILES_COLLECTION_ID = os.getenv("APPWRITE_PROFILES_COLLECTION_ID", "
 # Global Appwrite client instance
 _client: Optional[Client] = None
 _databases: Optional[Databases] = None
+_tables_db: Optional[TablesDB] = None
 
 
 def get_client() -> Client:
@@ -59,6 +61,15 @@ def get_databases() -> Databases:
         client = get_client()
         _databases = Databases(client)
     return _databases
+
+
+def get_tables_db() -> TablesDB:
+    """Get TablesDB service instance (use list_rows instead of deprecated list_documents)."""
+    global _tables_db
+    if _tables_db is None:
+        client = get_client()
+        _tables_db = TablesDB(client)
+    return _tables_db
 
 
 def create_user(email: str, password: str) -> Dict[str, Any]:
@@ -261,18 +272,17 @@ def get_user_profile(user_id: str) -> Optional[Dict[str, Any]]:
     Returns:
         Profile document or None if not found
     """
-    databases = get_databases()
-    
+    tables_db = get_tables_db()
     try:
-        # Query profiles collection for this user
-        result = databases.list_documents(
+        # Use list_rows (replaces deprecated list_documents)
+        result = tables_db.list_rows(
             database_id=APPWRITE_DATABASE_ID,
-            collection_id=APPWRITE_PROFILES_COLLECTION_ID,
+            table_id=APPWRITE_PROFILES_COLLECTION_ID,
             queries=[Query.equal('userId', user_id)]
         )
-        
-        if result['documents'] and len(result['documents']) > 0:
-            return result['documents'][0]
+        rows = result.get('rows', result.get('documents', []))
+        if rows:
+            return rows[0]
         return None
     except AppwriteException as e:
         if e.code == 404:
@@ -497,17 +507,16 @@ def change_user_password(user_id: str, new_password: str) -> bool:
 
 def get_user_by_customer_id(customer_id: str) -> Optional[Dict[str, Any]]:
     """Get user by Stripe customer ID."""
-    databases = get_databases()
-    
+    tables_db = get_tables_db()
     try:
-        result = databases.list_documents(
+        result = tables_db.list_rows(
             database_id=APPWRITE_DATABASE_ID,
-            collection_id=APPWRITE_PROFILES_COLLECTION_ID,
+            table_id=APPWRITE_PROFILES_COLLECTION_ID,
             queries=[Query.equal('stripeCustomerId', customer_id)]
         )
-        
-        if result['documents'] and len(result['documents']) > 0:
-            profile = result['documents'][0]
+        rows = result.get('rows', result.get('documents', []))
+        if rows:
+            profile = rows[0]
             user_id = profile.get('userId')
             if user_id:
                 return get_user_by_id(user_id)
